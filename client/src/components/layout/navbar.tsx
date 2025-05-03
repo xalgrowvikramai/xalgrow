@@ -44,26 +44,30 @@ const Navbar: React.FC = () => {
               </div>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-              <Link href="/dashboard">
-                <a className={`${location === '/dashboard' ? 'border-primary-500 text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white hover:border-gray-300'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}>
-                  {t('dashboard')}
-                </a>
-              </Link>
-              <Link href="/projects">
-                <a className={`${location === '/projects' ? 'border-primary-500 text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white hover:border-gray-300'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}>
-                  {t('projects')}
-                </a>
-              </Link>
-              <Link href="/templates">
-                <a className={`${location === '/templates' ? 'border-primary-500 text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white hover:border-gray-300'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}>
-                  {t('templates')}
-                </a>
-              </Link>
-              <Link href="/documentation">
-                <a className={`${location === '/documentation' ? 'border-primary-500 text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white hover:border-gray-300'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}>
-                  {t('documentation')}
-                </a>
-              </Link>
+              <div
+                onClick={() => window.location.href = '/dashboard'}
+                className={`${location === '/dashboard' ? 'border-primary-500 text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white hover:border-gray-300'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium cursor-pointer`}
+              >
+                {t('dashboard')}
+              </div>
+              <div
+                onClick={() => window.location.href = '/projects'}
+                className={`${location === '/projects' ? 'border-primary-500 text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white hover:border-gray-300'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium cursor-pointer`}
+              >
+                {t('projects')}
+              </div>
+              <div
+                onClick={() => window.location.href = '/templates'}
+                className={`${location === '/templates' ? 'border-primary-500 text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white hover:border-gray-300'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium cursor-pointer`}
+              >
+                {t('templates')}
+              </div>
+              <div
+                onClick={() => window.location.href = '/documentation'}
+                className={`${location === '/documentation' ? 'border-primary-500 text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white hover:border-gray-300'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium cursor-pointer`}
+              >
+                {t('documentation')}
+              </div>
             </div>
           </div>
           <div className="hidden sm:ml-6 sm:flex sm:items-center gap-4">
@@ -155,26 +159,30 @@ const Navbar: React.FC = () => {
       {/* Mobile menu */}
       <div className={`${mobileMenuOpen ? 'block' : 'hidden'} sm:hidden`} id="mobile-menu">
         <div className="pt-2 pb-3 space-y-1">
-          <Link href="/dashboard">
-            <a className={`${location === '/dashboard' ? 'bg-primary-50 dark:bg-gray-800 border-primary-500 text-primary-700 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300'} block pl-3 pr-4 py-2 border-l-4 text-base font-medium`}>
-              {t('dashboard')}
-            </a>
-          </Link>
-          <Link href="/projects">
-            <a className={`${location === '/projects' ? 'bg-primary-50 dark:bg-gray-800 border-primary-500 text-primary-700 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300'} block pl-3 pr-4 py-2 border-l-4 text-base font-medium`}>
-              {t('projects')}
-            </a>
-          </Link>
-          <Link href="/templates">
-            <a className={`${location === '/templates' ? 'bg-primary-50 dark:bg-gray-800 border-primary-500 text-primary-700 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300'} block pl-3 pr-4 py-2 border-l-4 text-base font-medium`}>
-              {t('templates')}
-            </a>
-          </Link>
-          <Link href="/documentation">
-            <a className={`${location === '/documentation' ? 'bg-primary-50 dark:bg-gray-800 border-primary-500 text-primary-700 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300'} block pl-3 pr-4 py-2 border-l-4 text-base font-medium`}>
-              {t('documentation')}
-            </a>
-          </Link>
+          <div 
+            onClick={() => window.location.href = '/dashboard'}
+            className={`${location === '/dashboard' ? 'bg-primary-50 dark:bg-gray-800 border-primary-500 text-primary-700 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300'} block pl-3 pr-4 py-2 border-l-4 text-base font-medium cursor-pointer`}
+          >
+            {t('dashboard')}
+          </div>
+          <div 
+            onClick={() => window.location.href = '/projects'}
+            className={`${location === '/projects' ? 'bg-primary-50 dark:bg-gray-800 border-primary-500 text-primary-700 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300'} block pl-3 pr-4 py-2 border-l-4 text-base font-medium cursor-pointer`}
+          >
+            {t('projects')}
+          </div>
+          <div 
+            onClick={() => window.location.href = '/templates'}
+            className={`${location === '/templates' ? 'bg-primary-50 dark:bg-gray-800 border-primary-500 text-primary-700 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300'} block pl-3 pr-4 py-2 border-l-4 text-base font-medium cursor-pointer`}
+          >
+            {t('templates')}
+          </div>
+          <div 
+            onClick={() => window.location.href = '/documentation'}
+            className={`${location === '/documentation' ? 'bg-primary-50 dark:bg-gray-800 border-primary-500 text-primary-700 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300'} block pl-3 pr-4 py-2 border-l-4 text-base font-medium cursor-pointer`}
+          >
+            {t('documentation')}
+          </div>
         </div>
         {user && (
           <div className="pt-4 pb-3 border-t border-gray-200 dark:border-gray-700">
@@ -204,16 +212,18 @@ const Navbar: React.FC = () => {
               </div>
             </div>
             <div className="mt-3 space-y-1">
-              <Link href="/profile">
-                <a className="block px-4 py-2 text-base font-medium text-gray-500 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
-                  {t('yourProfile')}
-                </a>
-              </Link>
-              <Link href="/settings">
-                <a className="block px-4 py-2 text-base font-medium text-gray-500 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
-                  {t('settings')}
-                </a>
-              </Link>
+              <div 
+                onClick={() => window.location.href = '/profile'}
+                className="block px-4 py-2 text-base font-medium text-gray-500 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+              >
+                {t('yourProfile')}
+              </div>
+              <div 
+                onClick={() => window.location.href = '/settings'}
+                className="block px-4 py-2 text-base font-medium text-gray-500 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+              >
+                {t('settings')}
+              </div>
               <button 
                 onClick={logout} 
                 className="block w-full text-left px-4 py-2 text-base font-medium text-gray-500 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
