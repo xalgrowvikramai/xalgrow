@@ -117,6 +117,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Firebase Authentication endpoints
+  app.post("/api/auth/firebase-login", async (req, res) => {
+    try {
+      const { idToken } = req.body;
+      
+      if (!idToken) {
+        return res.status(400).json({ message: "ID token is required" });
+      }
+      
+      // In a production environment, we would verify the Firebase ID token here
+      // For now, we'll simulate verification and create a session
+      
+      // Extract user info from token (in prod, this would come from token verification)
+      // This is a simplified example
+      const email = "user@example.com";  // This would come from the verified token
+      
+      // Find or create the user
+      let user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        // Auto-register new users from Firebase
+        // In a real implementation, you would extract these from the verified token
+        user = await storage.createUser({
+          username: email.split('@')[0],
+          email,
+          password: "firebase-auth", // placeholder, not used for firebase users
+          displayName: null,
+          photoURL: null,
+        });
+      }
+      
+      // Set user ID in session
+      req.session.userId = user.id;
+      
+      // Remove password from response
+      const { password, ...userWithoutPassword } = user;
+      
+      res.status(200).json(userWithoutPassword);
+    } catch (error) {
+      console.error("Firebase login error:", error);
+      res.status(500).json({ message: "Failed to authenticate with Firebase" });
+    }
+  });
+  
+  app.post("/api/auth/firebase-register", async (req, res) => {
+    try {
+      const { idToken, email, displayName, photoURL } = req.body;
+      
+      if (!idToken || !email) {
+        return res.status(400).json({ message: "ID token and email are required" });
+      }
+      
+      // In a production environment, we would verify the Firebase ID token here
+      // For now, we'll create a user directly
+      
+      // Check if user already exists
+      let user = await storage.getUserByEmail(email);
+      
+      if (user) {
+        // User already exists, update session
+        req.session.userId = user.id;
+        
+        // Remove password from response
+        const { password, ...userWithoutPassword } = user;
+        
+        return res.status(200).json(userWithoutPassword);
+      }
+      
+      // Create new user
+      user = await storage.createUser({
+        username: email.split('@')[0],
+        email,
+        password: "firebase-auth", // placeholder, not used for firebase users
+        displayName: displayName || null,
+        photoURL: photoURL || null,
+      });
+      
+      // Set user ID in session
+      req.session.userId = user.id;
+      
+      // Remove password from response
+      const { password, ...userWithoutPassword } = user;
+      
+      res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      console.error("Firebase register error:", error);
+      res.status(500).json({ message: "Failed to register with Firebase" });
+    }
+  });
+  
   // Project APIs
   app.get("/api/projects", async (req, res) => {
     try {

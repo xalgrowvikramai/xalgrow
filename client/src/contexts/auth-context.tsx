@@ -1,5 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth, getCurrentUser } from '@/lib/firebase';
+import { 
+  auth, 
+  getCurrentUser, 
+  loginWithEmail as firebaseLoginWithEmail,
+  registerWithEmail as firebaseRegisterWithEmail,
+  loginWithGoogle as firebaseLoginWithGoogle,
+  logoutUser as firebaseLogout
+} from '@/lib/firebase';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 
@@ -38,11 +45,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const firebaseUser = await getCurrentUser();
         
         if (firebaseUser) {
-          // Get user data from backend
-          const response = await apiRequest('GET', '/api/auth/me');
-          if (response.ok) {
-            const userData = await response.json();
-            setUser(userData);
+          try {
+            // Get user data from backend
+            const response = await apiRequest('GET', '/api/auth/me');
+            if (response.ok) {
+              const userData = await response.json();
+              setUser(userData);
+            } else {
+              // If the server doesn't recognize us, try to authenticate with firebase
+              const idToken = await firebaseUser.getIdToken();
+              const fbResponse = await fetch('/api/auth/firebase-login', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ idToken }),
+              });
+              
+              if (fbResponse.ok) {
+                const userData = await fbResponse.json();
+                setUser(userData);
+              } else {
+                setUser(null);
+              }
+            }
+          } catch (err) {
+            console.error('Failed to get user data from server', err);
+            setUser(null);
           }
         } else {
           setUser(null);
@@ -63,10 +92,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       setError(null);
       
-      const response = await apiRequest('POST', '/api/auth/login', { email, password });
-      const userData = await response.json();
+      // Use Firebase for authentication
+      await firebaseLoginWithEmail(email, password);
       
-      setUser(userData);
+      // Get user data from backend
+      const response = await apiRequest('GET', '/api/auth/me');
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+      }
+      
       toast({
         title: "Login successful",
         description: "Welcome back!",
@@ -89,14 +124,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       setError(null);
       
-      const response = await apiRequest('POST', '/api/auth/register', { 
-        username, 
-        email, 
-        password 
-      });
-      const userData = await response.json();
+      // Use Firebase for registration
+      await firebaseRegisterWithEmail(email, password);
       
-      setUser(userData);
+      // Additional registration with our backend is handled in firebaseRegisterWithEmail
+      
+      // Get user data from backend
+      const response = await apiRequest('GET', '/api/auth/me');
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+      }
+      
       toast({
         title: "Registration successful",
         description: "Your account has been created",
@@ -119,11 +158,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       setError(null);
       
-      // Google authentication would typically be handled by Firebase
-      // and then verified on the backend
+      // Use Firebase for Google authentication
+      await firebaseLoginWithGoogle();
+      
+      // Get user data from backend
+      const response = await apiRequest('GET', '/api/auth/me');
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+      }
+      
       toast({
-        title: "Google login",
-        description: "Google authentication is being processed",
+        title: "Login successful",
+        description: "You've been signed in with Google",
       });
     } catch (err: any) {
       setError(err.message || 'Google login failed');
@@ -141,8 +188,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     try {
       setLoading(true);
-      await apiRequest('POST', '/api/auth/logout');
+      
+      // Logout from Firebase (which also logs out from our backend)
+      await firebaseLogout();
+      
       setUser(null);
+      
       toast({
         title: "Logged out",
         description: "You've been successfully logged out",
