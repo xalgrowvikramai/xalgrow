@@ -30,13 +30,18 @@ export const loginWithEmail = async (email: string, password: string) => {
     // Get Firebase ID token to authenticate with our backend
     const idToken = await userCredential.user.getIdToken();
     
-    // Authenticate with our backend
+    // Authenticate with our backend, passing user details
     const response = await fetch('/api/auth/firebase-login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ idToken }),
+      body: JSON.stringify({ 
+        idToken,
+        email: userCredential.user.email,
+        displayName: userCredential.user.displayName,
+        photoURL: userCredential.user.photoURL
+      }),
     });
     
     if (!response.ok) {
@@ -87,13 +92,18 @@ export const loginWithGoogle = async () => {
     // Get Firebase ID token to authenticate with our backend
     const idToken = await result.user.getIdToken();
     
-    // Authenticate with our backend
+    // Authenticate with our backend, including user details
     const response = await fetch('/api/auth/firebase-login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ idToken }),
+      body: JSON.stringify({ 
+        idToken,
+        email: result.user.email,
+        displayName: result.user.displayName,
+        photoURL: result.user.photoURL
+      }),
     });
     
     if (!response.ok) {
@@ -146,7 +156,12 @@ export const getCurrentUser = (): Promise<User | null> => {
               headers: {
                 'Content-Type': 'application/json',
               },
-              body: JSON.stringify({ idToken }),
+              body: JSON.stringify({ 
+                idToken,
+                email: user.email,
+                displayName: user.displayName,
+                photoURL: user.photoURL
+              }),
             });
           } catch (err) {
             console.warn('Silent auth refresh failed', err);
