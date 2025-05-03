@@ -33,14 +33,15 @@ const Navbar: React.FC = () => {
         <div className="flex justify-between h-16">
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <Link href="/dashboard">
-                <a className="flex items-center gap-2">
-                  <div className="bg-primary-500 text-white p-1.5 rounded-lg">
-                    <i className="ri-code-box-line text-xl"></i>
-                  </div>
-                  <span className="font-bold text-xl text-primary-700 dark:text-primary-400">Xalgrow</span>
-                </a>
-              </Link>
+              <div 
+                className="flex items-center gap-2 cursor-pointer" 
+                onClick={() => window.location.href = '/dashboard'}
+              >
+                <div className="bg-primary-500 text-white p-1.5 rounded-lg">
+                  <i className="ri-code-box-line text-xl"></i>
+                </div>
+                <span className="font-bold text-xl text-primary-700 dark:text-primary-400">Xalgrow</span>
+              </div>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
               <Link href="/dashboard">
@@ -113,15 +114,11 @@ const Navbar: React.FC = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem>
-                    <Link href="/profile">
-                      <a className="w-full">{t('yourProfile')}</a>
-                    </Link>
+                  <DropdownMenuItem onClick={() => window.location.href = '/profile'}>
+                    {t('yourProfile')}
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Link href="/settings">
-                      <a className="w-full">{t('settings')}</a>
-                    </Link>
+                  <DropdownMenuItem onClick={() => window.location.href = '/settings'}>
+                    {t('settings')}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={logout}>
                     {t('signOut')}
@@ -129,13 +126,13 @@ const Navbar: React.FC = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Link href="/auth">
-                <a>
-                  <Button variant="default" size="sm">
-                    {t('login')}
-                  </Button>
-                </a>
-              </Link>
+              <Button 
+                variant="default" 
+                size="sm"
+                onClick={() => window.location.href = '/auth'}
+              >
+                {t('login')}
+              </Button>
             )}
           </div>
           

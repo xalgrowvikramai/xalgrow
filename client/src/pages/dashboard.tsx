@@ -121,13 +121,13 @@ const Dashboard: React.FC = () => {
                       <span className="text-xs text-gray-500 dark:text-gray-400">
                         Created: {formatDate(project.createdAt)}
                       </span>
-                      <Link href={`/editor/${project.id}`}>
-                        <a>
-                          <Button size="sm" variant="outline">
-                            <i className="ri-edit-2-line mr-1"></i> Edit
-                          </Button>
-                        </a>
-                      </Link>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => window.location.href = `/editor/${project.id}`}
+                      >
+                        <i className="ri-edit-2-line mr-1"></i> Edit
+                      </Button>
                     </div>
                   </div>
                 </div>

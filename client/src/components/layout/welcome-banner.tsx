@@ -23,16 +23,13 @@ const WelcomeBanner: React.FC<WelcomeBannerProps> = ({ onNewProject }) => {
             >
               <i className="ri-add-line mr-1"></i> {t('newProject')}
             </Button>
-            <Link href="/documentation">
-              <a>
-                <Button 
-                  variant="outline" 
-                  className="bg-white hover:bg-gray-100 text-gray-800 border border-gray-300"
-                >
-                  <i className="ri-book-open-line mr-1"></i> {t('tutorials')}
-                </Button>
-              </a>
-            </Link>
+            <Button 
+              variant="outline" 
+              className="bg-white hover:bg-gray-100 text-gray-800 border border-gray-300"
+              onClick={() => window.location.href = '/documentation'}
+            >
+              <i className="ri-book-open-line mr-1"></i> {t('tutorials')}
+            </Button>
           </div>
         </div>
         <div className="hidden md:block">
