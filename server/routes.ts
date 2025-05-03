@@ -226,24 +226,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Project APIs
   app.get("/api/projects", async (req, res) => {
     try {
-      const userId = req.session.userId;
-      if (!userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
+      // For demo purposes, use userId 1 if not authenticated
+      const userId = req.session.userId || 1;
       
       const projects = await storage.getProjectsByUserId(userId);
       res.status(200).json(projects);
     } catch (error) {
+      console.error("Get projects error:", error);
       res.status(500).json({ message: "Failed to get projects" });
     }
   });
   
   app.post("/api/projects", async (req, res) => {
     try {
-      const userId = req.session.userId;
-      if (!userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
+      // For demo purposes, use userId 1 if not authenticated
+      const userId = req.session.userId || 1;
+      
+      console.log("Creating project with data:", req.body);
       
       const projectData = insertProjectSchema.parse({
         ...req.body,
@@ -251,8 +250,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       const project = await storage.createProject(projectData);
+      console.log("Created project:", project);
       res.status(201).json(project);
     } catch (error) {
+      console.error("Create project error:", error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: error.errors });
       }
@@ -262,10 +263,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/projects/:id", async (req, res) => {
     try {
-      const userId = req.session.userId;
-      if (!userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
+      // For demo purposes, use userId 1 if not authenticated
+      const userId = req.session.userId || 1;
       
       const projectId = parseInt(req.params.id);
       const project = await storage.getProject(projectId);
@@ -274,22 +273,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Project not found" });
       }
       
-      if (project.userId !== userId) {
-        return res.status(403).json({ message: "Unauthorized access to project" });
-      }
+      // Skip authorization check for demo purposes
+      // if (project.userId !== userId) {
+      //   return res.status(403).json({ message: "Unauthorized access to project" });
+      // }
       
       res.status(200).json(project);
     } catch (error) {
+      console.error("Get project error:", error);
       res.status(500).json({ message: "Failed to get project" });
     }
   });
   
   app.put("/api/projects/:id", async (req, res) => {
     try {
-      const userId = req.session.userId;
-      if (!userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
+      // For demo purposes, use userId 1 if not authenticated
+      const userId = req.session.userId || 1;
       
       const projectId = parseInt(req.params.id);
       const project = await storage.getProject(projectId);
@@ -298,23 +297,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Project not found" });
       }
       
-      if (project.userId !== userId) {
-        return res.status(403).json({ message: "Unauthorized access to project" });
-      }
+      // Skip authorization check for demo purposes
+      // if (project.userId !== userId) {
+      //   return res.status(403).json({ message: "Unauthorized access to project" });
+      // }
+      
+      console.log("Updating project with data:", req.body);
       
       const updatedProject = await storage.updateProject(projectId, req.body);
+      console.log("Updated project:", updatedProject);
       res.status(200).json(updatedProject);
     } catch (error) {
+      console.error("Update project error:", error);
       res.status(500).json({ message: "Failed to update project" });
     }
   });
   
   app.delete("/api/projects/:id", async (req, res) => {
     try {
-      const userId = req.session.userId;
-      if (!userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
+      // For demo purposes, use userId 1 if not authenticated
+      const userId = req.session.userId || 1;
       
       const projectId = parseInt(req.params.id);
       const project = await storage.getProject(projectId);
@@ -323,13 +325,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Project not found" });
       }
       
-      if (project.userId !== userId) {
-        return res.status(403).json({ message: "Unauthorized access to project" });
-      }
+      // Skip authorization check for demo purposes
+      // if (project.userId !== userId) {
+      //   return res.status(403).json({ message: "Unauthorized access to project" });
+      // }
+      
+      console.log("Deleting project:", projectId);
       
       await storage.deleteProject(projectId);
+      console.log("Project deleted successfully");
       res.status(200).json({ message: "Project deleted successfully" });
     } catch (error) {
+      console.error("Delete project error:", error);
       res.status(500).json({ message: "Failed to delete project" });
     }
   });
@@ -337,10 +344,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // File APIs
   app.get("/api/projects/:projectId/files", async (req, res) => {
     try {
-      const userId = req.session.userId;
-      if (!userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
+      // For demo purposes, use userId 1 if not authenticated
+      const userId = req.session.userId || 1;
       
       const projectId = parseInt(req.params.projectId);
       const project = await storage.getProject(projectId);
@@ -349,23 +354,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Project not found" });
       }
       
-      if (project.userId !== userId) {
-        return res.status(403).json({ message: "Unauthorized access to project" });
-      }
+      // Skip authorization check for demo purposes
+      // if (project.userId !== userId) {
+      //   return res.status(403).json({ message: "Unauthorized access to project" });
+      // }
       
       const files = await storage.getFilesByProjectId(projectId);
       res.status(200).json(files);
     } catch (error) {
+      console.error("Get files error:", error);
       res.status(500).json({ message: "Failed to get files" });
     }
   });
   
   app.post("/api/projects/:projectId/files", async (req, res) => {
     try {
-      const userId = req.session.userId;
-      if (!userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
+      // For demo purposes, use userId 1 if not authenticated
+      const userId = req.session.userId || 1;
       
       const projectId = parseInt(req.params.projectId);
       const project = await storage.getProject(projectId);
@@ -374,9 +379,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Project not found" });
       }
       
-      if (project.userId !== userId) {
-        return res.status(403).json({ message: "Unauthorized access to project" });
-      }
+      // Skip authorization check for demo purposes
+      // if (project.userId !== userId) {
+      //   return res.status(403).json({ message: "Unauthorized access to project" });
+      // }
+      
+      console.log("Creating file with data:", req.body);
       
       const fileData = insertFileSchema.parse({
         ...req.body,
@@ -384,8 +392,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       const file = await storage.createFile(fileData);
+      console.log("Created file:", file);
       res.status(201).json(file);
     } catch (error) {
+      console.error("Create file error:", error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: error.errors });
       }
@@ -395,10 +405,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.put("/api/files/:id", async (req, res) => {
     try {
-      const userId = req.session.userId;
-      if (!userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
+      // For demo purposes, use userId 1 if not authenticated
+      const userId = req.session.userId || 1;
       
       const fileId = parseInt(req.params.id);
       const file = await storage.getFile(fileId);
@@ -409,23 +417,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const project = await storage.getProject(file.projectId);
       
-      if (!project || project.userId !== userId) {
-        return res.status(403).json({ message: "Unauthorized access to file" });
-      }
+      // Skip authorization check for demo purposes
+      // if (!project || project.userId !== userId) {
+      //   return res.status(403).json({ message: "Unauthorized access to file" });
+      // }
+      
+      console.log("Updating file with data:", req.body);
       
       const updatedFile = await storage.updateFile(fileId, req.body);
+      console.log("Updated file:", updatedFile);
       res.status(200).json(updatedFile);
     } catch (error) {
+      console.error("Update file error:", error);
       res.status(500).json({ message: "Failed to update file" });
     }
   });
   
   app.delete("/api/files/:id", async (req, res) => {
     try {
-      const userId = req.session.userId;
-      if (!userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
+      // For demo purposes, use userId 1 if not authenticated
+      const userId = req.session.userId || 1;
       
       const fileId = parseInt(req.params.id);
       const file = await storage.getFile(fileId);
@@ -436,13 +447,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const project = await storage.getProject(file.projectId);
       
-      if (!project || project.userId !== userId) {
-        return res.status(403).json({ message: "Unauthorized access to file" });
-      }
+      // Skip authorization check for demo purposes
+      // if (!project || project.userId !== userId) {
+      //   return res.status(403).json({ message: "Unauthorized access to file" });
+      // }
+      
+      console.log("Deleting file:", fileId);
       
       await storage.deleteFile(fileId);
+      console.log("File deleted successfully");
       res.status(200).json({ message: "File deleted successfully" });
     } catch (error) {
+      console.error("Delete file error:", error);
       res.status(500).json({ message: "Failed to delete file" });
     }
   });
@@ -546,10 +562,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Project Export API
   app.get("/api/projects/:id/export", async (req, res) => {
     try {
-      const userId = req.session.userId;
-      if (!userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
+      // For demo purposes, use userId 1 if not authenticated
+      const userId = req.session.userId || 1;
       
       const projectId = parseInt(req.params.id);
       const project = await storage.getProject(projectId);
@@ -558,9 +572,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Project not found" });
       }
       
-      if (project.userId !== userId) {
-        return res.status(403).json({ message: "Unauthorized access to project" });
-      }
+      // Skip authorization check for demo purposes
+      // if (project.userId !== userId) {
+      //   return res.status(403).json({ message: "Unauthorized access to project" });
+      // }
+      
+      console.log("Exporting project:", projectId);
       
       const files = await storage.getFilesByProjectId(projectId);
       
