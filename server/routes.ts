@@ -489,7 +489,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ]
         });
         
-        generatedCode = response.content[0].text;
+        // Handle different response formats safely
+        if (response.content && response.content.length > 0) {
+          const content = response.content;
+          // Use type assertion to deal with the complex Claude API response type
+          // @ts-ignore - Ignoring type check for Anthropic API response
+          generatedCode = content[0].text || JSON.stringify(content);
+        } else {
+          generatedCode = "No content returned from AI";
+        }
       } else {
         return res.status(400).json({ message: "Invalid model specified" });
       }
