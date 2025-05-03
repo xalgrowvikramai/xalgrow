@@ -119,7 +119,16 @@ export class MemStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.userId++;
     const now = new Date();
-    const user: User = { ...insertUser, id, createdAt: now };
+    
+    // Ensure the properties are set to null instead of undefined
+    const user: User = { 
+      ...insertUser, 
+      id, 
+      createdAt: now,
+      displayName: insertUser.displayName ?? null, 
+      photoURL: insertUser.photoURL ?? null 
+    };
+    
     this.users.set(id, user);
     return user;
   }
@@ -147,7 +156,16 @@ export class MemStorage implements IStorage {
   async createProject(insertProject: InsertProject): Promise<Project> {
     const id = this.projectId++;
     const now = new Date();
-    const project: Project = { ...insertProject, id, createdAt: now, updatedAt: now };
+    
+    // Ensure description is set to null instead of undefined
+    const project: Project = { 
+      ...insertProject, 
+      id, 
+      createdAt: now, 
+      updatedAt: now,
+      description: insertProject.description ?? null
+    };
+    
     this.projects.set(id, project);
     return project;
   }
@@ -225,7 +243,17 @@ export class MemStorage implements IStorage {
   async createTemplate(insertTemplate: InsertTemplate): Promise<Template> {
     const id = this.templateId++;
     const now = new Date();
-    const template: Template = { ...insertTemplate, id, createdAt: now };
+    
+    // Ensure description, imageUrl, and isPremium are set properly
+    const template: Template = { 
+      ...insertTemplate, 
+      id, 
+      createdAt: now,
+      description: insertTemplate.description ?? null,
+      imageUrl: insertTemplate.imageUrl ?? null,
+      isPremium: insertTemplate.isPremium ?? false
+    };
+    
     this.templates.set(id, template);
     return template;
   }

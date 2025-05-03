@@ -127,29 +127,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // In a production environment, we would verify the Firebase ID token here
-      // For now, we'll simulate verification and create a session
+      // For demo purposes, we'll extract information from the request body
+      // In a real app, you'd verify the token with the Firebase Admin SDK
       
-      // Extract user info from token (in prod, this would come from token verification)
-      // This is a simplified example
-      const email = "user@example.com";  // This would come from the verified token
+      // Extract email from request (for demo)
+      // Check if an email was sent in the request body as a fallback
+      const email = req.body.email || 'demo@example.com';
+      
+      console.log(`Authenticating Firebase user with email: ${email}`);
       
       // Find or create the user
       let user = await storage.getUserByEmail(email);
       
       if (!user) {
         // Auto-register new users from Firebase
-        // In a real implementation, you would extract these from the verified token
+        const username = email.split('@')[0];
+        const displayName = req.body.displayName || username;
+        const photoURL = req.body.photoURL || null;
+        
+        console.log(`Creating new user: ${username}, ${email}, ${displayName}`);
+        
         user = await storage.createUser({
-          username: email.split('@')[0],
+          username,
           email,
           password: "firebase-auth", // placeholder, not used for firebase users
-          displayName: null,
-          photoURL: null,
+          displayName,
+          photoURL,
         });
       }
       
       // Set user ID in session
       req.session.userId = user.id;
+      console.log(`Setting session userId: ${user.id}`);
       
       // Remove password from response
       const { password, ...userWithoutPassword } = user;
@@ -169,13 +178,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "ID token and email are required" });
       }
       
+      console.log(`Registering Firebase user with email: ${email}`);
+      
       // In a production environment, we would verify the Firebase ID token here
-      // For now, we'll create a user directly
+      // For demo purposes, we'll extract information from the request body
       
       // Check if user already exists
       let user = await storage.getUserByEmail(email);
       
       if (user) {
+        console.log(`User already exists with ID: ${user.id}`);
         // User already exists, update session
         req.session.userId = user.id;
         
@@ -186,8 +198,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Create new user
+      const username = email.split('@')[0];
+      console.log(`Creating new user: ${username}, ${email}, ${displayName || username}`);
+      
       user = await storage.createUser({
-        username: email.split('@')[0],
+        username,
         email,
         password: "firebase-auth", // placeholder, not used for firebase users
         displayName: displayName || null,
@@ -196,6 +211,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Set user ID in session
       req.session.userId = user.id;
+      console.log(`Setting session userId: ${user.id}`);
       
       // Remove password from response
       const { password, ...userWithoutPassword } = user;
