@@ -792,6 +792,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Helper function to clean markdown code blocks from content
+  const cleanCodeContent = (content: string): string => {
+    // Check if content has markdown code blocks
+    if (content.startsWith('```')) {
+      // Extract content between code block markers
+      const codeBlockRegex = /```(?:jsx|js|tsx|ts|html|css)?\n([\s\S]*?)```/;
+      const match = content.match(codeBlockRegex);
+      
+      if (match && match[1]) {
+        return match[1];
+      } else {
+        // If no match, try removing just the markers
+        return content.replace(/^```(?:jsx|js|tsx|ts|html|css)?\n|```$/g, '');
+      }
+    }
+    return content;
+  };
+
   // AI App Generation Endpoint
   app.post("/api/ai/generate-app", async (req, res) => {
     try {
@@ -1022,11 +1040,16 @@ export default MainComponent;`
       for (const file of generatedFiles) {
         console.log(`Created file: ${file.path}/${file.name}`);
         
-        // Create the file without markdown code blocks in the content
+        // Process the content - make sure it doesn't have markdown code blocks
+        const cleanedContent = file.content.startsWith('```') 
+          ? cleanCodeContent(file.content)
+          : file.content;
+          
+        // Store the clean content without markdown code blocks 
         await storage.createFile({
           name: file.name,
           path: file.path,
-          content: file.content, // Store raw content without code block markers
+          content: cleanedContent,
           projectId: Number(projectId)
         });
       }

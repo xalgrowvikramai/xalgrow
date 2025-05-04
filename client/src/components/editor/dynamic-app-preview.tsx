@@ -25,12 +25,19 @@ const DynamicAppPreview: React.FC<DynamicAppPreviewProps> = ({ className = '' })
   const jsxFiles = useMemo(() => {
     if (!projectFiles || projectFiles.length === 0) return [];
     
-    return projectFiles.filter(file => 
+    // Get all code files for rendering
+    const files = projectFiles.filter(file => 
       file.name.endsWith('.jsx') || 
       file.name.endsWith('.tsx') || 
       file.name.endsWith('.js') || 
       file.name.endsWith('.ts')
     );
+    
+    // Debug log to see what files we have
+    console.log('JSX Files for rendering:', 
+      files.map(f => `${f.path}/${f.name}`));
+    
+    return files;
   }, [projectFiles]);
   
   // Get all CSS files for styling
@@ -107,14 +114,20 @@ const DynamicAppPreview: React.FC<DynamicAppPreviewProps> = ({ className = '' })
         });
       }
       
+      // Log the app file content for debugging
+      console.log('App file content:', appFile.content.substring(0, 100) + '...');
+      
       // Create a basic wrapper component that displays the file list and code structure
       return (
         <div className="p-4">
           <h2 className="text-xl font-bold mb-4">Generated App Preview</h2>
           
           <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg mb-4 bg-white dark:bg-gray-800">
-            <div className="border-b border-gray-200 dark:border-gray-700 pb-2 mb-4">
+            <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2 mb-4">
               <h3 className="font-medium text-gray-800 dark:text-gray-200">App Content:</h3>
+              <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                {appFile.path}/{appFile.name}
+              </span>
             </div>
             
             <div className="prose dark:prose-invert max-w-none">
@@ -127,8 +140,9 @@ const DynamicAppPreview: React.FC<DynamicAppPreviewProps> = ({ className = '' })
             <h3 className="text-lg font-medium mb-2">Project Structure:</h3>
             <div className="space-y-1">
               {projectFiles.map((file, index) => (
-                <div key={index} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-md font-mono text-sm">
-                  {file.path}/{file.name}
+                <div key={index} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-md font-mono text-sm flex justify-between">
+                  <span>{file.path}/{file.name}</span>
+                  <span className="text-xs text-gray-500">{file.content.length} bytes</span>
                 </div>
               ))}
             </div>
