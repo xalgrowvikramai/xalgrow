@@ -9,6 +9,7 @@ import { FileExplorer } from '@/components/layout/file-explorer';
 import { ProjectSettings } from '@/components/project/project-settings';
 import { CodeEditor } from '@/components/ui/code-editor';
 import { PreviewPanel } from '@/components/editor/preview-panel';
+import { StandalonePreview } from '@/components/editor/standalone-preview';
 import { ChatInterface } from '@/components/ai/chat-interface';
 import { DeploymentOptions } from '@/components/deployment/deployment-options';
 import { Button } from '@/components/ui/button';
@@ -219,7 +220,7 @@ const Editor: React.FC = () => {
               </div>
               
               {/* Center Editor & Preview Section */}
-              <div className="col-span-12 lg:col-span-6 grid grid-rows-2 gap-4 h-[calc(100vh-12rem)]">
+              <div className="col-span-12 lg:col-span-6 grid grid-rows-2 gap-4 min-h-[calc(100vh-12rem)]">
                 {/* Code Editor */}
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700 flex flex-col">
                   <div className="border-b border-gray-200 dark:border-gray-700 p-2 flex justify-between items-center">
@@ -288,8 +289,11 @@ const Editor: React.FC = () => {
                   </div>
                 </div>
                 
-                {/* Preview Panel Component */}
-                <PreviewPanel />
+                {/* Preview Components */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <PreviewPanel />
+                  <StandalonePreview />
+                </div>
               </div>
               
               {/* AI Chat Interface Component */}
