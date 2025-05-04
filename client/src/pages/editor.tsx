@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRoute, useLocation, Link } from 'wouter';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/contexts/auth-context';
@@ -19,6 +19,8 @@ const Editor: React.FC = () => {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [match, params] = useRoute<{ id: string }>('/editor/:id');
+  const [view, setView] = useState<'code' | 'preview'>('preview');
+  const [sidebarVisible, setSidebarVisible] = useState(true);
   
   const { 
     fetchProject, 
@@ -38,16 +40,6 @@ const Editor: React.FC = () => {
   } = useEditor();
 
   // For development purposes, we're bypassing authentication checks
-  // Original authentication check (commented out)
-  /*
-  useEffect(() => {
-    if (!user) {
-      setLocation('/auth');
-    }
-  }, [user, setLocation]);
-  */
-  
-  // Development mode: log authentication status but don't redirect
   useEffect(() => {
     if (!user) {
       console.log('Development mode: Bypassing authentication redirect in editor.tsx');
@@ -84,6 +76,24 @@ const Editor: React.FC = () => {
       }
     }
   }, [match, params, currentProject, projectFiles.length, fetchProject, fetchProjectFiles, setLocation]);
+
+  // Automatically set the first App.jsx file as active when project loads
+  useEffect(() => {
+    if (projectFiles.length > 0 && !activeFile) {
+      // Find App.jsx
+      const appFile = projectFiles.find(file => 
+        file.name.toLowerCase() === 'app.jsx' || 
+        file.name.toLowerCase() === 'index.jsx'
+      );
+      
+      if (appFile) {
+        setActiveFile(appFile);
+      } else {
+        // If no App.jsx, set the first file
+        setActiveFile(projectFiles[0]);
+      }
+    }
+  }, [projectFiles, activeFile, setActiveFile]);
 
   // Save file content when changed
   const handleSaveFile = async () => {
@@ -129,182 +139,223 @@ const Editor: React.FC = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500 mx-auto"></div>
           <p className="mt-4 text-gray-600 dark:text-gray-300">{t('loading')}</p>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            Loading project and initializing resources...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentProject) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center p-8 max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+          <i className="ri-error-warning-line text-5xl text-amber-500 mb-4"></i>
+          <h2 className="text-2xl font-bold mb-4">Project Not Found</h2>
+          <p className="mb-6 text-gray-600 dark:text-gray-300">
+            The project you're looking for doesn't exist or you don't have access to it.
+          </p>
+          <Link href="/dashboard">
+            <a className="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors">
+              <i className="ri-arrow-left-line mr-2"></i>
+              Back to Dashboard
+            </a>
+          </Link>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Navbar />
-      
-      <main className="mx-auto px-4 pt-4">
-        {!currentProject ? (
-          <div className="text-center p-8">
-            <h2 className="text-2xl font-bold mb-4">Project Not Found</h2>
-            <p className="mb-6">The project you're looking for doesn't exist or you don't have access to it.</p>
+    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900 overflow-hidden">
+      {/* Top Navigation Bar */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 py-2 px-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
             <Link href="/dashboard">
-              <a>
-                <Button>
-                  <i className="ri-arrow-left-line mr-2"></i>
-                  Back to Dashboard
-                </Button>
+              <a className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                <i className="ri-arrow-left-line text-xl"></i>
               </a>
             </Link>
+            <h1 className="font-semibold text-lg truncate max-w-[200px]">{currentProject.name}</h1>
+            <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+              <button 
+                className={`px-3 py-1 text-sm rounded ${
+                  view === 'preview' 
+                  ? 'bg-white dark:bg-gray-600 shadow-sm' 
+                  : 'text-gray-600 dark:text-gray-300'
+                }`}
+                onClick={() => setView('preview')}
+              >
+                <i className="ri-eye-line mr-1"></i>
+                Preview
+              </button>
+              <button 
+                className={`px-3 py-1 text-sm rounded ${
+                  view === 'code' 
+                  ? 'bg-white dark:bg-gray-600 shadow-sm' 
+                  : 'text-gray-600 dark:text-gray-300'
+                }`}
+                onClick={() => setView('code')}
+              >
+                <i className="ri-code-line mr-1"></i>
+                Code
+              </button>
+            </div>
           </div>
-        ) : (
-          <>
-            <div className="flex items-center justify-between mb-4">
-              <h1 className="text-2xl font-bold">{currentProject.name}</h1>
-              <Link href="/dashboard">
-                <a>
-                  <Button variant="outline">
-                    <i className="ri-dashboard-line mr-2"></i>
-                    Dashboard
-                  </Button>
-                </a>
-              </Link>
+          
+          <div className="flex items-center space-x-3">
+            <button 
+              className="text-gray-500 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white p-1"
+              onClick={() => setSidebarVisible(!sidebarVisible)}
+            >
+              <i className={`ri-${sidebarVisible ? 'layout-right-2' : 'layout-left-2'}-line text-lg`}></i>
+            </button>
+            <button className="text-gray-500 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white p-1">
+              <i className="ri-save-line text-lg"></i>
+            </button>
+            <button className="text-gray-500 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white p-1">
+              <i className="ri-share-line text-lg"></i>
+            </button>
+            <button className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors">
+              Deploy
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      {/* Main content area */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left sidebar - File explorer */}
+        {sidebarVisible && (
+          <div className="w-64 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col overflow-hidden">
+            <div className="border-b border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex justify-between items-center">
+                <h2 className="font-semibold text-sm text-gray-700 dark:text-gray-300">PROJECT FILES</h2>
+                <div className="flex space-x-1">
+                  <button className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 rounded">
+                    <i className="ri-add-line text-sm"></i>
+                  </button>
+                  <button className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 rounded">
+                    <i className="ri-refresh-line text-sm"></i>
+                  </button>
+                </div>
+              </div>
             </div>
             
-            <div className="grid grid-cols-12 gap-4">
-              {/* File Explorer & Project Setup */}
-              <div className="col-span-12 lg:col-span-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
-                <div className="border-b border-gray-200 dark:border-gray-700 p-4">
-                  <div className="flex justify-between items-center">
-                    <h2 className="font-semibold text-lg">{t('project')}</h2>
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                      >
-                        <i className="ri-refresh-line"></i>
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                      >
-                        <i className="ri-more-2-fill"></i>
-                      </Button>
+            {/* File List */}
+            <div className="flex-1 overflow-y-auto p-2">
+              <FileExplorer />
+            </div>
+            
+            {/* Project settings panel */}
+            <div className="border-t border-gray-200 dark:border-gray-700 p-3">
+              <button className="w-full flex items-center justify-between p-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+                <span className="flex items-center">
+                  <i className="ri-settings-3-line mr-2"></i>
+                  Project Settings
+                </span>
+                <i className="ri-arrow-right-s-line"></i>
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {/* Main content area - Preview by default */}
+        <div className="flex-1 overflow-hidden flex flex-col">
+          {view === 'preview' ? (
+            <div className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-850 p-4">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden min-h-[calc(100vh-12rem)]">
+                <div className="border-b border-gray-200 dark:border-gray-700 py-2 px-4 flex items-center justify-between bg-gray-50 dark:bg-gray-700">
+                  <div className="flex items-center space-x-2">
+                    <div className="flex space-x-1">
+                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                      <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
                     </div>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {currentProject.name} - Live Preview
+                    </span>
                   </div>
-                  <div className="mt-4">
-                    <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded-md flex justify-between items-center">
-                      <span className="font-medium text-sm">{currentProject.name}</span>
-                      <div className="flex gap-1">
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 text-sm"
-                        >
-                          <i className="ri-edit-line"></i>
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 text-sm"
-                        >
-                          <i className="ri-download-line"></i>
-                        </Button>
-                      </div>
+                  <div className="flex items-center space-x-2">
+                    <button className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 text-sm">
+                      <i className="ri-refresh-line"></i>
+                    </button>
+                    <div className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100 rounded">
+                      Desktop
                     </div>
                   </div>
                 </div>
-                
-                {/* File Explorer Component */}
-                <FileExplorer />
-                
-                {/* Project Settings Component */}
-                <ProjectSettings />
-              </div>
-              
-              {/* Center Editor & Preview Section */}
-              <div className="col-span-12 lg:col-span-6 grid grid-rows-2 gap-4 min-h-[calc(100vh-12rem)]">
-                {/* Code Editor */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700 flex flex-col">
-                  <div className="border-b border-gray-200 dark:border-gray-700 p-2 flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                      >
-                        <i className="ri-file-list-line text-gray-500"></i>
-                      </Button>
-                      {activeFile ? (
-                        <div className="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-md text-sm font-medium flex items-center gap-1">
-                          <i className={`${
-                            activeFile.name.endsWith('.jsx') || activeFile.name.endsWith('.tsx') 
-                              ? 'ri-reactjs-line text-primary-500' 
-                              : 'ri-file-code-line text-gray-500'
-                          }`}></i>
-                          <span>{activeFile.name}</span>
-                          <button 
-                            className="ml-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                            onClick={() => setActiveFile(null)}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="text-sm text-gray-500">No file selected</span>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                        onClick={handleSaveFile}
-                        disabled={!activeFile || activeFileContent === activeFile.content}
-                      >
-                        <i className="ri-save-line"></i>
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                      >
-                        <i className="ri-settings-line"></i>
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="flex-1 overflow-auto">
-                    {activeFile ? (
-                      <CodeEditor
-                        value={activeFileContent}
-                        onChange={updateActiveFileContent}
-                        language={getFileLanguage()}
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-gray-500">
-                        <div className="text-center">
-                          <i className="ri-file-code-line text-4xl mb-2"></i>
-                          <p>Select a file to edit</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Preview Components */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <PreviewPanel />
+                <div className="p-2 overflow-auto h-full">
                   <StandalonePreview />
                 </div>
               </div>
-              
-              {/* AI Chat Interface Component */}
-              <ChatInterface className="col-span-12 lg:col-span-3" />
             </div>
-            
-            {/* Deployment Options Component */}
-            <DeploymentOptions className="my-4" />
-          </>
-        )}
-      </main>
+          ) : (
+            <div className="flex-1 flex">
+              {/* Code Editor Section */}
+              <div className="flex-1 overflow-hidden flex flex-col border-r border-gray-200 dark:border-gray-700">
+                {/* Editor tabs */}
+                <div className="flex items-center bg-gray-50 dark:bg-gray-750 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+                  {activeFile && (
+                    <div className="flex items-center px-3 py-2 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                      <i className={`${
+                        activeFile.name.endsWith('.jsx') || activeFile.name.endsWith('.tsx') 
+                          ? 'ri-reactjs-line text-blue-500' 
+                          : activeFile.name.endsWith('.css')
+                          ? 'ri-palette-line text-pink-500'
+                          : 'ri-file-code-line text-gray-500'
+                      } mr-2`}></i>
+                      <span className="text-sm font-medium">{activeFile.name}</span>
+                      <button 
+                        className="ml-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        onClick={() => setActiveFile(null)}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Code editor */}
+                <div className="flex-1 overflow-hidden">
+                  {activeFile ? (
+                    <CodeEditor
+                      value={activeFileContent}
+                      onChange={updateActiveFileContent}
+                      language={getFileLanguage()}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+                      <div className="text-center max-w-md p-6">
+                        <i className="ri-file-code-line text-5xl mb-4 text-gray-300 dark:text-gray-600"></i>
+                        <h3 className="text-xl font-semibold mb-2">No File Selected</h3>
+                        <p className="text-gray-600 dark:text-gray-400 mb-4">
+                          Choose a file from the sidebar to start editing, or create a new file.
+                        </p>
+                        <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                          <i className="ri-add-line mr-1"></i> New File
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Right sidebar - AI chat panel */}
+              <div className="w-80 bg-white dark:bg-gray-800 flex flex-col border-l border-gray-200 dark:border-gray-700">
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                  <h2 className="font-semibold text-sm text-gray-700 dark:text-gray-300">AI ASSISTANT</h2>
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                  <ChatInterface />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
