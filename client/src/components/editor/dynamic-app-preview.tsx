@@ -5,6 +5,9 @@ import { FacebookAppPreview } from './facebook-app-preview';
 import { InteractiveAppPreview } from './interactive-app-preview';
 import { PhotoGalleryPreview } from './photo-gallery-preview';
 
+// Constants for improved code organization
+const DEFAULT_PREVIEW_HEIGHT = 500;
+
 interface DynamicAppPreviewProps {
   className?: string;
 }
@@ -133,22 +136,97 @@ const DynamicAppPreview: React.FC<DynamicAppPreviewProps> = ({ className = '' })
       // Get all CSS content
       const cssContent = cssFiles.map(file => file.content).join('\n');
       
-      // Create a sandbox iframe to run the React code
-      const iframeSrcDoc = `
+      // For security reasons, we'll use a simpler approach to show the app preview
+      // This will display HTML directly without trying to run the React code in an iframe
+      
+      // Function to convert JSX to a displayable preview
+      const createVisualPreview = () => {
+        // Extract what would typically be rendered inside the return statement
+        const extractJSXContent = (content: string) => {
+          // Check for return statement with parenthesis
+          const returnRegex = /return\s*\(\s*([\s\S]*?)\s*\)\s*;/;
+          const match = content.match(returnRegex);
+          
+          if (match && match[1]) {
+            // Return the JSX inside the return statement
+            return match[1]
+              .replace(/className=/g, 'class=')          // Convert React className to class
+              .replace(/{([^}]+)}/g, '')                 // Remove JS expressions in {}
+              .replace(/onClick={[^}]+}/g, '')           // Remove event handlers
+              .replace(/onChange={[^}]+}/g, '')
+              .replace(/onSubmit={[^}]+}/g, '')
+              .replace(/key={[^}]+}/g, '')
+              .replace(/<>/g, '<div>')                   // Handle React fragments
+              .replace(/<\/>/g, '</div>')
+              .replace(/\/>/g, '></div>');               // Self-closing tags
+          }
+          
+          return `<div class="p-4 bg-white text-center">Preview not available for this component structure</div>`;
+        };
+        
+        // Create a visual HTML version of the component
+        const visualHtml = `
+          <div class="p-4 bg-white dark:bg-gray-800 text-black dark:text-white min-h-[300px] rounded border border-gray-200 dark:border-gray-700">
+            <div class="border-b pb-2 mb-4 text-lg font-semibold text-center">
+              ${currentProject?.name || 'App'} Preview
+            </div>
+            
+            ${extractJSXContent(processedAppContent)}
+            
+            <div class="bg-gray-100 dark:bg-gray-700 p-2 mt-4 text-xs text-center rounded">
+              Static preview - interactive features disabled
+            </div>
+          </div>
+        `;
+        
+        return visualHtml;
+      };
+      
+      const visualPreview = createVisualPreview();
+      
+      // Create a more detailed representation of the code with syntax highlighting
+      const codePreviewHtml = `
         <!DOCTYPE html>
         <html>
           <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>App Preview</title>
-            <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-            <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-            <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+            <title>Code Preview</title>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
             <style>
               body {
                 font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
                 margin: 0;
-                padding: 0;
+                padding: 16px;
+                background-color: #1e1e1e;
+                color: #d4d4d4;
+              }
+              pre {
+                margin: 0;
+                padding: 16px;
+                border-radius: 6px;
+                background-color: #282c34 !important;
+                overflow-x: auto;
+              }
+              .code-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 8px 16px;
+                background-color: #282c34;
+                border-top-left-radius: 6px;
+                border-top-right-radius: 6px;
+                font-size: 14px;
+                color: #abb2bf;
+                margin-top: 16px;
+              }
+              .code-header:first-child {
+                margin-top: 0;
+              }
+              pre {
+                border-top-left-radius: 0;
+                border-top-right-radius: 0;
               }
               
               /* Include all project CSS */
@@ -156,53 +234,59 @@ const DynamicAppPreview: React.FC<DynamicAppPreviewProps> = ({ className = '' })
             </style>
           </head>
           <body>
-            <div id="root"></div>
+            <div class="code-header">App.jsx</div>
+            <pre><code class="language-jsx">${processedAppContent.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
             
-            <script type="text/babel">
-              // Component imports would normally go here
-              
-              // Include any supporting component files
-              ${componentFiles.map(file => `
-                // ${file.path}/${file.name}
-                ${file.content.startsWith('```') 
-                  ? file.content.replace(/^```(?:jsx|js|tsx|ts|html|css)?\n/, '').replace(/```$/, '')
-                  : file.content}
-              `).join('\n\n')}
-              
-              // Main App component
-              ${processedAppContent}
-              
-              // Render the app
-              try {
-                const rootElement = document.getElementById('root');
-                const root = ReactDOM.createRoot(rootElement);
-                root.render(React.createElement(App));
-                console.log('Successfully rendered the app!');
-              } catch (err) {
-                console.error('Error rendering React app:', err);
-                document.getElementById('root').innerHTML = 
-                  '<div style="color: red; padding: 20px; border: 1px solid red;">' +
-                  '<h3>Error Rendering App</h3>' +
-                  '<p>' + err.message + '</p>' +
-                  '</div>';
-              }
+            ${componentFiles.map(file => `
+              <div class="code-header">${file.path}/${file.name}</div>
+              <pre><code class="language-jsx">${(file.content.startsWith('```') 
+                ? file.content.replace(/^```(?:jsx|js|tsx|ts|html|css)?\n/, '').replace(/```$/, '')
+                : file.content).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
+            `).join('\n')}
+            
+            <script>
+              document.addEventListener('DOMContentLoaded', (event) => {
+                document.querySelectorAll('pre code').forEach((block) => {
+                  hljs.highlightElement(block);
+                });
+              });
             </script>
           </body>
         </html>
       `;
       
-      // Return the component with the sandbox iframe
+      // Return the component with two tabs - Visual preview and Code view
       return (
         <div className="p-4 h-full flex flex-col">
           <h2 className="text-xl font-bold mb-4">Generated App Preview</h2>
           
-          <div className="flex-1 border border-gray-200 dark:border-gray-700 rounded-lg mb-4 overflow-hidden">
-            <iframe
-              title="App Preview"
-              sandbox="allow-scripts"
-              className="w-full h-full border-0 bg-white dark:bg-gray-50"
-              srcDoc={iframeSrcDoc}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 mb-4">
+            {/* Visual Preview Panel */}
+            <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+              <div className="p-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 font-medium text-sm">
+                Visual Preview
+              </div>
+              
+              <div className="bg-white dark:bg-gray-900">
+                <div dangerouslySetInnerHTML={{ __html: visualPreview }} />
+              </div>
+            </div>
+            
+            {/* Code Preview Panel */}
+            <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+              <div className="p-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 font-medium text-sm">
+                Code View
+              </div>
+              
+              <div className="h-[500px]">
+                <iframe
+                  title="Code Preview"
+                  sandbox="allow-scripts"
+                  className="w-full h-full border-0"
+                  srcDoc={codePreviewHtml}
+                />
+              </div>
+            </div>
           </div>
           
           <div className="mt-4">
