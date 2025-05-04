@@ -32,6 +32,44 @@ const RuntimePreview: React.FC<RuntimePreviewProps> = ({ className = '' }) => {
     }
   };
 
+  // Fallback preview component for when iframes don't work
+  const renderFallbackPreview = () => {
+    if (!projectFiles || projectFiles.length === 0) return null;
+    
+    // Find App.jsx or main component
+    const appFile = projectFiles.find(file => 
+      file.name.toLowerCase() === 'app.jsx' || 
+      file.name.toLowerCase() === 'app.js'
+    );
+    
+    const cssFiles = projectFiles.filter(file => file.name.endsWith('.css'));
+    const jsxFiles = projectFiles.filter(file => 
+      file.name.endsWith('.jsx') || 
+      file.name.endsWith('.js')
+    );
+    
+    return (
+      <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <h3 className="text-lg font-medium mb-4 text-center">App Structure Preview</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          {jsxFiles.slice(0, 4).map((file, index) => (
+            <div key={index} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
+              <div className="font-medium mb-2 text-blue-600 dark:text-blue-400">{file.name}</div>
+              <div className="text-xs overflow-hidden text-gray-600 dark:text-gray-300 font-mono" style={{maxHeight: '100px'}}>
+                {cleanContent(file.content).slice(0, 200)}...
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+          Direct preview unavailable - app structure shown instead
+        </div>
+      </div>
+    );
+  };
+
   // Function to generate full HTML with embedded React
   const generateHTML = () => {
     if (!projectFiles || projectFiles.length === 0) return '';
@@ -145,6 +183,47 @@ const RuntimePreview: React.FC<RuntimePreviewProps> = ({ className = '' }) => {
     return finalHTMLWithJS;
   };
 
+  // Method to directly write to the iframe document instead of using blob URLs
+  const writeToIframe = (html: string) => {
+    if (!iframeRef.current) return;
+    
+    try {
+      const iframeDoc = iframeRef.current.contentDocument || 
+                       (iframeRef.current.contentWindow?.document);
+      
+      if (!iframeDoc) {
+        console.error('Cannot access iframe document');
+        setError('Cannot access iframe document - possible security restriction');
+        return;
+      }
+      
+      // Write the HTML directly to the document
+      iframeDoc.open();
+      iframeDoc.write(html);
+      iframeDoc.close();
+      
+      setLoading(false);
+    } catch (err: any) {
+      console.error('Error writing to iframe:', err);
+      setError(err.message || 'Error rendering preview');
+      setLoading(false);
+    }
+  };
+
+  // Alternative method using srcdoc which may work better in some browsers
+  const useSrcDoc = (html: string) => {
+    if (!iframeRef.current) return;
+    try {
+      // Use srcdoc attribute which is more broadly supported for this use case
+      iframeRef.current.srcdoc = html;
+      setLoading(false);
+    } catch (err: any) {
+      console.error('Error setting srcdoc:', err);
+      setError(err.message || 'Error rendering preview');
+      setLoading(false);
+    }
+  };
+
   // Update the iframe content when files change
   useEffect(() => {
     if (!projectFiles || projectFiles.length === 0) {
@@ -172,35 +251,24 @@ const RuntimePreview: React.FC<RuntimePreviewProps> = ({ className = '' }) => {
     }
     
     try {
+      setLoading(true);
+      
+      // Reset any previous error
+      setError(null);
+      
       // Generate HTML with embedded React and code
       const html = generateHTML();
       
-      // Set the iframe content
+      // Try multiple approaches for maximum compatibility
       if (iframeRef.current) {
-        setLoading(true);
+        // First attempt: Use srcdoc (most compatible)
+        useSrcDoc(html);
         
-        // Reset any previous error
-        setError(null);
-        
-        // Create a blob URL for the HTML
-        const blob = new Blob([html], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        
-        // Set the src to the blob URL
-        iframeRef.current.src = url;
-        
-        // Cleanup once iframe loads
-        iframeRef.current.onload = () => {
-          setLoading(false);
-          // Free memory by revoking the blob URL
-          URL.revokeObjectURL(url);
-        };
-        
-        // Handle iframe errors
+        // Add fallback for error handling
         iframeRef.current.onerror = (e) => {
-          setError('Failed to load preview');
-          setLoading(false);
-          console.error('Iframe error:', e);
+          console.error('Iframe error with srcdoc:', e);
+          // If srcdoc fails, try direct document writing
+          writeToIframe(html);
         };
       }
     } catch (err: any) {
@@ -223,39 +291,65 @@ const RuntimePreview: React.FC<RuntimePreviewProps> = ({ className = '' }) => {
     );
   }
 
+  const [showFallback, setShowFallback] = useState(false);
+
   return (
     <div className={`h-full overflow-auto ${className}`}>
       <div className="p-4 h-full flex flex-col">
-        <h2 className="text-xl font-bold mb-4">Live App Preview</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Live App Preview</h2>
+          <button 
+            onClick={() => setShowFallback(!showFallback)}
+            className="px-3 py-1 text-sm rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200"
+          >
+            {showFallback ? "Try Live Preview" : "Use Fallback Preview"}
+          </button>
+        </div>
         
         {/* Preview container */}
         <div className="flex-1 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-800">
           {/* Loading state */}
-          {loading && (
+          {loading && !showFallback && (
             <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 z-10">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
             </div>
           )}
           
           {/* Error state */}
-          {error && (
+          {error && !showFallback && (
             <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-md border border-red-200 dark:border-red-700">
               <h3 className="text-lg font-semibold text-red-800 dark:text-red-500 mb-2">Preview Error</h3>
               <p className="text-red-700 dark:text-red-400">{error}</p>
+              <button 
+                onClick={() => setShowFallback(true)} 
+                className="mt-3 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+              >
+                Use Fallback Preview
+              </button>
             </div>
           )}
           
-          {/* The actual iframe where the app will run */}
-          <iframe
-            ref={iframeRef}
-            className="w-full h-full border-0"
-            sandbox="allow-scripts allow-popups allow-forms allow-modals allow-same-origin"
-            title="App Preview"
-          />
+          {/* Choose between iframe and fallback */}
+          {showFallback ? (
+            <div className="p-4 h-full overflow-auto">
+              {renderFallbackPreview()}
+            </div>
+          ) : (
+            <iframe
+              ref={iframeRef}
+              className="w-full h-full border-0"
+              sandbox="allow-scripts allow-popups allow-forms allow-modals allow-same-origin allow-downloads"
+              allow="fullscreen; clipboard-read; clipboard-write;"
+              title="App Preview"
+            />
+          )}
         </div>
         
         <div className="mt-4 text-xs text-gray-500 dark:text-gray-400">
-          This preview runs your actual React code with limited functionality for security reasons.
+          {showFallback 
+            ? "Using fallback preview - showing app structure instead of live rendering"
+            : "This preview runs your actual React code with limited functionality for security reasons."
+          }
         </div>
       </div>
     </div>
