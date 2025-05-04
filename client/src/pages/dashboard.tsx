@@ -35,10 +35,11 @@ const Dashboard: React.FC = () => {
   const [projectBackend, setProjectBackend] = useState(backendOptions[0]);
   const [isCreating, setIsCreating] = useState(false);
   
-  // Fetch user's projects
+  // Fetch user's projects - for development, always enabled
   const { data: projects, isLoading, refetch } = useQuery<Project[]>({
     queryKey: ['/api/projects'],
-    enabled: !!user, // Only fetch if user is logged in
+    enabled: true, // For development, always fetch regardless of login status
+    // Original: enabled: !!user, // Only fetch if user is logged in
   });
 
   const handleCreateProject = async () => {
@@ -121,13 +122,14 @@ const Dashboard: React.FC = () => {
                       <span className="text-xs text-gray-500 dark:text-gray-400">
                         Created: {formatDate(project.createdAt)}
                       </span>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => window.location.href = `/editor/${project.id}`}
-                      >
-                        <i className="ri-edit-2-line mr-1"></i> Edit
-                      </Button>
+                      <Link href={`/editor/${project.id}`}>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                        >
+                          <i className="ri-edit-2-line mr-1"></i> Edit
+                        </Button>
+                      </Link>
                     </div>
                   </div>
                 </div>

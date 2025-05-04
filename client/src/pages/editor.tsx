@@ -36,12 +36,24 @@ const Editor: React.FC = () => {
     setActiveFile 
   } = useEditor();
 
-  // If not authenticated, redirect to login
+  // For development purposes, we're bypassing authentication checks
+  // Original authentication check (commented out)
+  /*
   useEffect(() => {
     if (!user) {
       setLocation('/auth');
     }
   }, [user, setLocation]);
+  */
+  
+  // Development mode: log authentication status but don't redirect
+  useEffect(() => {
+    if (!user) {
+      console.log('Development mode: Bypassing authentication redirect in editor.tsx');
+    } else {
+      console.log('User is authenticated:', user);
+    }
+  }, [user]);
 
   // Load project and files
   useEffect(() => {
