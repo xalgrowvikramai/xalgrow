@@ -89,18 +89,50 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ className = '' }) => {
             No files yet. Create a new file to get started.
           </div>
         ) : (
-          projectFiles.map((file) => (
-            <div 
-              key={file.id} 
-              className={`flex items-center p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md cursor-pointer ${
-                activeFile?.id === file.id ? 'bg-gray-100 dark:bg-gray-700' : ''
-              }`}
-              onClick={() => handleFileClick(file)}
-            >
-              <i className={`${getFileIcon(file.name)} mr-2`}></i>
-              <span className="text-sm">{file.name}</span>
-            </div>
-          ))
+          <>
+            {/* Group and render files by folder structure */}
+            {(() => {
+              // First, group files by directory
+              const filesByDirectory: Record<string, ProjectFile[]> = {};
+              
+              projectFiles.forEach(file => {
+                const directory = file.path || '/';
+                if (!filesByDirectory[directory]) {
+                  filesByDirectory[directory] = [];
+                }
+                filesByDirectory[directory].push(file);
+              });
+              
+              // Render directories and their files
+              return Object.entries(filesByDirectory).map(([directory, files], index) => (
+                <div key={index} className="mb-2">
+                  {/* Directory header - only show if not root */}
+                  {directory !== '/' && (
+                    <div className="flex items-center py-1 px-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mt-2 mb-1">
+                      <i className="ri-folder-line mr-1.5"></i>
+                      {directory.replace(/^\//, '')}
+                    </div>
+                  )}
+                  
+                  {/* Files in this directory */}
+                  <div className="space-y-0.5 pl-1">
+                    {files.map((file) => (
+                      <div 
+                        key={file.id} 
+                        className={`flex items-center p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md cursor-pointer ${
+                          activeFile?.id === file.id ? 'bg-gray-100 dark:bg-gray-700' : ''
+                        }`}
+                        onClick={() => handleFileClick(file)}
+                      >
+                        <i className={`${getFileIcon(file.name)} mr-2`}></i>
+                        <span className="text-sm">{file.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ));
+            })()}
+          </>
         )}
       </div>
       

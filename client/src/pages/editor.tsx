@@ -80,17 +80,20 @@ const Editor: React.FC = () => {
 
   // Automatically set the first App.jsx file as active when project loads
   useEffect(() => {
-    if (projectFiles.length > 0 && !activeFile) {
-      // Find App.jsx
+    if (projectFiles.length > 0) {
+      // Find App.jsx or App.js or similar main file
       const appFile = projectFiles.find(file => 
         file.name.toLowerCase() === 'app.jsx' || 
-        file.name.toLowerCase() === 'index.jsx'
+        file.name.toLowerCase() === 'app.js' || 
+        file.name.toLowerCase() === 'app.tsx' || 
+        file.name.toLowerCase() === 'index.jsx' ||
+        file.name.toLowerCase() === 'index.js'
       );
       
       if (appFile) {
         setActiveFile(appFile);
-      } else {
-        // If no App.jsx, set the first file
+      } else if (!activeFile) {
+        // If no main file found and no current active file, set the first file
         setActiveFile(projectFiles[0]);
       }
     }
