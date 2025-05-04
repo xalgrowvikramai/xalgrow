@@ -39,6 +39,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   useEffect(() => {
+    // For development/testing - provide a mock user to bypass authentication
+    const setupMockUser = () => {
+      const mockUser = {
+        id: 1,
+        username: 'testuser',
+        email: 'test@example.com',
+        displayName: 'Test User',
+        createdAt: new Date(),
+      };
+      
+      console.log('Using mock user for development:', mockUser);
+      setUser(mockUser);
+      setLoading(false);
+    };
+    
+    // Skip actual authentication and use mock user
+    setupMockUser();
+    
+    // Original authentication code (commented out for now)
+    /*
     const checkAuth = async () => {
       try {
         setLoading(true);
@@ -85,6 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     
     checkAuth();
+    */
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -92,6 +113,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       setError(null);
       
+      // For development/testing - skip actual authentication
+      console.log('Dev mode: Bypassing actual login with Firebase');
+      
+      // Create mock user with provided email
+      const mockUser = {
+        id: 1,
+        username: email.split('@')[0],
+        email: email,
+        displayName: email.split('@')[0],
+        createdAt: new Date(),
+      };
+      
+      setUser(mockUser);
+      
+      toast({
+        title: "Login successful",
+        description: "Welcome back! (Development Mode)",
+      });
+      
+      /*
       // Use Firebase for authentication
       await firebaseLoginWithEmail(email, password);
       
@@ -101,11 +142,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const userData = await response.json();
         setUser(userData);
       }
-      
-      toast({
-        title: "Login successful",
-        description: "Welcome back!",
-      });
+      */
     } catch (err: any) {
       setError(err.message || 'Login failed');
       toast({
@@ -124,6 +161,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       setError(null);
       
+      // For development/testing - skip actual registration
+      console.log('Dev mode: Bypassing actual registration with Firebase');
+      
+      // Create mock user with provided info
+      const mockUser = {
+        id: 1,
+        username: username,
+        email: email,
+        displayName: username,
+        createdAt: new Date(),
+      };
+      
+      setUser(mockUser);
+      
+      toast({
+        title: "Registration successful",
+        description: "Your account has been created (Development Mode)",
+      });
+      
+      /*
       // Use Firebase for registration
       await firebaseRegisterWithEmail(email, password);
       
@@ -135,11 +192,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const userData = await response.json();
         setUser(userData);
       }
-      
-      toast({
-        title: "Registration successful",
-        description: "Your account has been created",
-      });
+      */
     } catch (err: any) {
       setError(err.message || 'Registration failed');
       toast({
@@ -158,6 +211,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       setError(null);
       
+      // For development/testing - skip actual Google authentication
+      console.log('Dev mode: Bypassing actual Google login with Firebase');
+      
+      // Create mock user with Google-like info
+      const mockUser = {
+        id: 1,
+        username: 'googleuser',
+        email: 'google-user@example.com',
+        displayName: 'Google User',
+        photoURL: 'https://lh3.googleusercontent.com/a/default-user',
+        createdAt: new Date(),
+      };
+      
+      setUser(mockUser);
+      
+      toast({
+        title: "Login successful",
+        description: "You've been signed in with Google (Development Mode)",
+      });
+      
+      /*
       // Use Firebase for Google authentication
       await firebaseLoginWithGoogle();
       
@@ -167,11 +241,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const userData = await response.json();
         setUser(userData);
       }
-      
-      toast({
-        title: "Login successful",
-        description: "You've been signed in with Google",
-      });
+      */
     } catch (err: any) {
       setError(err.message || 'Google login failed');
       toast({
@@ -189,15 +259,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       
-      // Logout from Firebase (which also logs out from our backend)
-      await firebaseLogout();
+      // For development/testing - skip actual logout
+      console.log('Dev mode: Bypassing actual logout from Firebase');
       
       setUser(null);
       
       toast({
         title: "Logged out",
-        description: "You've been successfully logged out",
+        description: "You've been successfully logged out (Development Mode)",
       });
+      
+      /*
+      // Logout from Firebase (which also logs out from our backend)
+      await firebaseLogout();
+      
+      setUser(null);
+      */
     } catch (err: any) {
       setError(err.message || 'Logout failed');
       toast({
