@@ -1,4 +1,14 @@
-import { apiRequest } from './queryClient';
+import { AIModel } from '@/types';
+
+interface GeneratedFile {
+  name: string;
+  path: string;
+  content: string;
+}
+
+interface GeneratedApplication {
+  files: GeneratedFile[];
+}
 
 /**
  * Generates a complete application based on a description
@@ -10,28 +20,33 @@ import { apiRequest } from './queryClient';
  * @returns An object containing the generated files
  */
 export async function generateApplication(
-  description: string, 
-  projectId: number, 
-  model: 'openai' | 'anthropic' = 'openai'
-): Promise<{ message: string, files: any[] }> {
+  description: string,
+  projectId: number,
+  model: AIModel = 'openai'
+): Promise<GeneratedApplication> {
   try {
-    console.log(`Generating application with description: ${description}`);
-    
-    const response = await apiRequest('POST', '/api/ai/generate-app', {
-      description,
-      projectId,
-      model
+    // Call the server API to generate the application
+    const response = await fetch(`/api/ai/generate-app`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        description,
+        projectId,
+        model
+      })
     });
     
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to generate application');
+      const errorText = await response.text();
+      throw new Error(`API error: ${response.status} - ${errorText}`);
     }
     
     const data = await response.json();
     return data;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Application generation error:", error);
-    throw new Error(`Failed to generate application: ${error.message}`);
+    throw new Error(`Failed to generate application: ${error.message || 'Unknown error'}`);
   }
 }

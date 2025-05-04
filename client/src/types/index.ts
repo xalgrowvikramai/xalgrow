@@ -91,9 +91,8 @@ export const backendOptions = [
 ];
 
 export const modelOptions = [
-  'OpenAI GPT-4',
-  'OpenAI GPT-3.5',
-  'Anthropic Claude',
+  { value: 'openai', label: 'OpenAI GPT-4' },
+  { value: 'anthropic', label: 'Anthropic Claude' },
 ];
 
 // Deployment options
