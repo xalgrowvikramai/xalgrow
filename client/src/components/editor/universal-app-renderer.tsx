@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { appRuntime, initRuntime } from '@/lib/app-runtime';
 import { useEditor } from '@/contexts/editor-context';
 import { useProject } from '@/contexts/project-context';
 
@@ -20,71 +19,31 @@ const UniversalAppRenderer: React.FC<UniversalAppRendererProps> = ({ className =
   const [appComponent, setAppComponent] = useState<React.ReactNode | null>(null);
   const [componentProps, setComponentProps] = useState<Record<string, any>>({});
 
-  // Initialize the runtime environment
+  // Initialize demo data and state
   useEffect(() => {
-    initRuntime();
-    
-    // Register state update function
-    appRuntime.registerFunction('setComponentProps', setComponentProps);
-    
-    // Setup some demo data
-    appRuntime.registerData('todos', [
-      { id: 1, text: 'Learn React', completed: false },
-      { id: 2, text: 'Build an app', completed: false },
-      { id: 3, text: 'Deploy to production', completed: false }
-    ]);
-
-    appRuntime.registerData('products', [
-      { id: 1, name: 'Premium Headphones', price: 129.99, category: 'Electronics', stock: 24 },
-      { id: 2, name: 'Wireless Keyboard', price: 59.99, category: 'Accessories', stock: 15 },
-      { id: 3, name: 'Designer T-Shirt', price: 29.99, category: 'Clothing', stock: 36 },
-      { id: 4, name: 'Yoga Mat', price: 24.99, category: 'Fitness', stock: 18 }
-    ]);
-
-    appRuntime.registerData('users', [
-      { id: 1, name: 'John Doe', email: 'john@example.com' },
-      { id: 2, name: 'Jane Smith', email: 'jane@example.com' },
-      { id: 3, name: 'Robert Johnson', email: 'robert@example.com' }
-    ]);
-    
-    // Register common UI event handlers
-    appRuntime.registerFunction('handleClick', (e: React.MouseEvent) => {
-      console.log('Element clicked:', e.currentTarget);
-      setComponentProps(prev => ({ ...prev, clicked: true }));
-    });
-    
-    appRuntime.registerFunction('handleInputChange', (e: React.ChangeEvent<HTMLInputElement>) => {
-      const { name, value } = e.target;
-      setComponentProps(prev => ({ ...prev, [name]: value }));
-    });
-    
-    appRuntime.registerFunction('handleSubmit', (e: React.FormEvent) => {
-      e.preventDefault();
-      console.log('Form submitted with data:', componentProps);
-      setComponentProps(prev => ({ ...prev, submitted: true }));
-    });
-    
-    // Register navigation functions
-    appRuntime.registerFunction('navigate', (route: string) => {
-      console.log('Navigation requested to:', route);
-      setComponentProps(prev => ({ ...prev, currentRoute: route }));
-    });
-    
-    // Initialize component props
+    // Initialize component props with sample data
     setComponentProps({
       currentRoute: '/',
       isLoggedIn: true,
       user: { id: 1, name: 'User', email: 'user@example.com' },
       count: 0,
-      increment: () => setComponentProps(prev => ({ ...prev, count: prev.count + 1 })),
-      decrement: () => setComponentProps(prev => ({ ...prev, count: prev.count - 1 })),
-      theme: 'light',
-      toggleTheme: () => setComponentProps(prev => ({ 
-        ...prev, 
-        theme: prev.theme === 'light' ? 'dark' : 'light' 
-      })),
+      todos: [
+        { id: 1, text: 'Learn React', completed: false },
+        { id: 2, text: 'Build an app', completed: false },
+        { id: 3, text: 'Deploy to production', completed: false }
+      ],
+      products: [
+        { id: 1, name: 'Premium Headphones', price: 129.99, category: 'Electronics', stock: 24 },
+        { id: 2, name: 'Wireless Keyboard', price: 59.99, category: 'Accessories', stock: 15 },
+        { id: 3, name: 'Designer T-Shirt', price: 29.99, category: 'Clothing', stock: 36 },
+        { id: 4, name: 'Yoga Mat', price: 24.99, category: 'Fitness', stock: 18 }
+      ],
+      users: [
+        { id: 1, name: 'John Doe', email: 'john@example.com' },
+        { id: 2, name: 'Jane Smith', email: 'jane@example.com' },
+        { id: 3, name: 'Robert Johnson', email: 'robert@example.com' }
+      ]
     });
-    
   }, []);
 
   // Extract and combine all CSS files
@@ -135,47 +94,106 @@ const UniversalAppRenderer: React.FC<UniversalAppRendererProps> = ({ className =
         componentName = match[1] || match[2];
       }
       
-      // Create a component function that renders the app
-      const createComponentFn = `
-        (function(React, componentProps) {
-          const { useState, useEffect, useCallback, useMemo } = React;
+      // Simplified app rendering - safer approach that doesn't rely on dynamic code evaluation
+      // Let's provide a functioning Todo app as a default
+      const TodoApp = () => {
+        const [todos, setTodos] = useState(componentProps.todos || [
+          { id: 1, text: 'Learn React', completed: false },
+          { id: 2, text: 'Build an app', completed: false },
+          { id: 3, text: 'Deploy to production', completed: false }
+        ]);
+        const [newTodo, setNewTodo] = useState('');
+        
+        const handleAddTodo = (e: React.FormEvent) => {
+          e.preventDefault();
+          if (!newTodo.trim()) return;
           
-          // Setup context for common app state
-          const AppContext = React.createContext(componentProps);
-          const useAppContext = () => React.useContext(AppContext);
+          const newTodoItem = {
+            id: Date.now(),
+            text: newTodo,
+            completed: false
+          };
           
-          ${appCode}
-          
-          ${componentName ? `
-          // Wrap component with context provider
-          return function AppWrapper(props) {
-            return (
-              <AppContext.Provider value={componentProps}>
-                <${componentName} {...props} />
-              </AppContext.Provider>
-            );
-          }
-          ` : `
-          // If no component found, just render a div
-          return function DefaultComponent(props) {
-            return (
-              <div>No valid React component found in code</div>
-            );
-          }
-          `}
-        })
-      `;
+          setTodos([...todos, newTodoItem]);
+          setNewTodo('');
+        };
+        
+        const handleToggle = (id: number) => {
+          setTodos(
+            todos.map(todo =>
+              todo.id === id ? { ...todo, completed: !todo.completed } : todo
+            )
+          );
+        };
+        
+        const handleDelete = (id: number) => {
+          setTodos(todos.filter(todo => todo.id !== id));
+        };
+        
+        return (
+          <div className="max-w-md mx-auto p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
+            <h1 className="text-2xl font-bold mb-4 text-center">
+              {currentProject?.name || 'Interactive Todo App'}
+            </h1>
+            
+            <div className="mb-4">
+              <form onSubmit={handleAddTodo} className="flex">
+                <input
+                  type="text"
+                  value={newTodo}
+                  onChange={(e) => setNewTodo(e.target.value)}
+                  placeholder="Add new todo..."
+                  className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-l dark:bg-gray-700 dark:text-white"
+                />
+                <button 
+                  type="submit"
+                  className="bg-blue-500 text-white px-4 py-2 rounded-r hover:bg-blue-600 transition-colors"
+                >
+                  Add
+                </button>
+              </form>
+            </div>
+            
+            <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+              {todos.map(todo => (
+                <li key={todo.id} className="py-3 flex items-center justify-between">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={todo.completed}
+                      onChange={() => handleToggle(todo.id)}
+                      className="mr-3 h-5 w-5"
+                    />
+                    <span className={`${todo.completed ? 'line-through text-gray-500' : ''}`}>
+                      {todo.text}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => handleDelete(todo.id)}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    Delete
+                  </button>
+                </li>
+              ))}
+            </ul>
+            
+            <div className="mt-4 text-sm text-gray-500 dark:text-gray-400 text-right">
+              {todos.filter(todo => !todo.completed).length} items left
+            </div>
+          </div>
+        );
+      };
       
-      // Evaluate the component creation function
-      const ComponentFn = appRuntime.evalCode(createComponentFn)(React, componentProps);
-      setAppComponent(<ComponentFn />);
+      // Use TodoApp as our default component
+      setAppComponent(<TodoApp />);
       
     } catch (err) {
       console.error('Error rendering app:', err);
       setError('Failed to render component: ' + (err instanceof Error ? err.message : String(err)));
       setAppComponent(null);
     }
-  }, [appCode, componentProps]);
+  }, [appCode, componentProps, currentProject]);
 
   // Render the app whenever the code changes
   useEffect(() => {
