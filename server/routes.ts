@@ -525,6 +525,169 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // API for generating complete applications based on a description
+  app.post("/api/ai/generate-app", async (req, res) => {
+    try {
+      const { 
+        description, 
+        projectId,
+        model = "openai" 
+      } = req.body;
+      
+      if (!description) {
+        return res.status(400).json({ message: "Description is required" });
+      }
+      
+      if (!projectId) {
+        return res.status(400).json({ message: "Project ID is required" });
+      }
+      
+      // Check if project exists
+      const project = await storage.getProject(parseInt(projectId));
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      console.log(`Generating app for project ${projectId} with description: ${description}`);
+      
+      // Step 1: Generate the file structure for the app
+      let fileStructure;
+      
+      if (model === "openai") {
+        // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        const response = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: `You are an expert at creating React applications. Given a description of an app, generate a file structure with a list of necessary files for a complete, working application. 
+              Respond with a JSON object that has a "files" property containing an array of file objects. Each file object should have "name", "path", and "description" properties. 
+              The files should form a complete, working application that meets the user's requirements.
+              For React apps, include .jsx or .tsx files. Include CSS files where needed.
+              ONLY respond with the JSON object and nothing else.`
+            },
+            {
+              role: "user",
+              content: `Create a file structure for the following app: ${description}`
+            }
+          ],
+          response_format: { type: "json_object" }
+        });
+        
+        try {
+          fileStructure = JSON.parse(response.choices[0].message.content);
+        } catch (e) {
+          console.error("Error parsing JSON from OpenAI:", e);
+          return res.status(500).json({ message: "Failed to parse AI response" });
+        }
+      } else if (model === "anthropic") {
+        // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025. Do not change this unless explicitly requested by the user.
+        const response = await anthropic.messages.create({
+          model: "claude-3-7-sonnet-20250219",
+          max_tokens: 4000,
+          system: `You are an expert at creating React applications. Given a description of an app, generate a file structure with a list of necessary files for a complete, working application. 
+          Respond with a JSON object that has a "files" property containing an array of file objects. Each file object should have "name", "path", and "description" properties. 
+          The files should form a complete, working application that meets the user's requirements.
+          For React apps, include .jsx or .tsx files. Include CSS files where needed.
+          ONLY respond with the JSON object and nothing else.`,
+          messages: [
+            {
+              role: "user",
+              content: `Create a file structure for the following app: ${description}`
+            }
+          ]
+        });
+        
+        try {
+          fileStructure = JSON.parse(response.content[0].text);
+        } catch (e) {
+          console.error("Error parsing JSON from Anthropic:", e);
+          return res.status(500).json({ message: "Failed to parse AI response" });
+        }
+      } else {
+        return res.status(400).json({ message: "Invalid model specified" });
+      }
+      
+      if (!fileStructure || !fileStructure.files || !Array.isArray(fileStructure.files)) {
+        return res.status(500).json({ message: "Invalid file structure generated" });
+      }
+      
+      // Step 2: Generate the content for each file and create the files
+      const generatedFiles = [];
+      
+      for (const file of fileStructure.files) {
+        // Generate the content for this file
+        let fileContent;
+        
+        if (model === "openai") {
+          const response = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+              {
+                role: "system",
+                content: `You are an expert React developer. Generate the contents of the file described below for an app with this description: "${description}".
+                The file should be well-structured, properly commented, and follow best practices.
+                Only output the code, no explanations.`
+              },
+              {
+                role: "user",
+                content: `Generate the contents for: ${file.path}/${file.name}
+                Description: ${file.description}`
+              }
+            ]
+          });
+          
+          fileContent = response.choices[0].message.content;
+        } else if (model === "anthropic") {
+          const response = await anthropic.messages.create({
+            model: "claude-3-7-sonnet-20250219",
+            max_tokens: 4000,
+            system: `You are an expert React developer. Generate the contents of the file described below for an app with this description: "${description}".
+            The file should be well-structured, properly commented, and follow best practices. 
+            Only output the code, no explanations.`,
+            messages: [
+              {
+                role: "user",
+                content: `Generate the contents for: ${file.path}/${file.name}
+                Description: ${file.description}`
+              }
+            ]
+          });
+          
+          fileContent = response.content[0].text;
+        }
+        
+        // Create the file in the database
+        const path = file.path || "";
+        const fullPath = path ? `${path}/${file.name}` : file.name;
+        
+        const newFile = await storage.createFile({
+          name: file.name,
+          content: fileContent,
+          path: path,
+          projectId: parseInt(projectId)
+        });
+        
+        generatedFiles.push({
+          ...newFile,
+          description: file.description
+        });
+        
+        console.log(`Created file: ${fullPath}`);
+      }
+      
+      // Step 3: Return the generated files
+      res.status(200).json({ 
+        message: "Application generated successfully", 
+        files: generatedFiles 
+      });
+      
+    } catch (error) {
+      console.error("AI app generation error:", error);
+      res.status(500).json({ message: "Failed to generate application" });
+    }
+  });
+  
   // Template APIs
   app.get("/api/templates", async (req, res) => {
     try {
