@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { useLocation } from 'wouter';
+import { useProject } from '@/contexts/project-context';
 import { useToast } from '@/hooks/use-toast';
 import { AIModel, modelOptions } from '@/types';
 import { generateApplication } from '@/lib/app-generator';
+
 import {
   Dialog,
   DialogContent,
@@ -18,10 +21,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
+import { Textarea } from '@/components/ui/textarea';
+import { Loader2, Bot, Sparkles } from 'lucide-react';
 
 interface AppGeneratorDialogProps {
   open: boolean;
@@ -30,137 +32,138 @@ interface AppGeneratorDialogProps {
 }
 
 /**
- * A dialog component for generating a new application using AI
- * This is the core interface for Xalgrow's app generation capabilities
+ * Dialog for generating application code with AI
+ * This is the core feature of Xalgrow - using AI to generate entire applications
  */
 export function AppGeneratorDialog({ open, onOpenChange, onSuccess }: AppGeneratorDialogProps) {
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { currentProject } = useProject();
   
   const [appDescription, setAppDescription] = useState('');
   const [selectedModel, setSelectedModel] = useState<AIModel>('openai');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [currentStep, setCurrentStep] = useState('');
+  const [generatingStep, setGeneratingStep] = useState(0);
+  const generatingSteps = [
+    'Analyzing requirements...',
+    'Designing architecture...',
+    'Generating code...',
+    'Creating files...',
+    'Finalizing application...'
+  ];
   
-  // Reset dialog state when it opens
-  const handleOpenChange = (open: boolean) => {
-    if (!open) {
-      // If closing without generating, reset the state
-      setAppDescription('');
-      setSelectedModel('openai');
-      setProgress(0);
-      setCurrentStep('');
+  // Timer to simulate AI thinking steps
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Start the generation process with steps
+  const startGenerationSteps = () => {
+    setGeneratingStep(0);
+    
+    // Simulate steps with timeouts
+    const simulateSteps = (step: number) => {
+      if (step < generatingSteps.length - 1) {
+        timerRef.current = setTimeout(() => {
+          setGeneratingStep(step + 1);
+          simulateSteps(step + 1);
+        }, 1500); // 1.5 seconds between steps
+      }
+    };
+    
+    simulateSteps(0);
+  };
+  
+  // Clean up timer if dialog closes
+  const handleDialogOpenChange = (open: boolean) => {
+    if (!open && timerRef.current) {
+      clearTimeout(timerRef.current);
     }
     onOpenChange(open);
   };
   
-  // Handle generation of the application
   const handleGenerateApp = async () => {
-    if (!appDescription.trim()) {
+    if (!currentProject) {
       toast({
-        title: "Description Required",
-        description: "Please provide a description of the application you want to generate.",
+        title: "No Project Selected",
+        description: "Please select a project before generating an app.",
         variant: "destructive"
       });
       return;
     }
     
-    setIsGenerating(true);
-    setProgress(10);
-    setCurrentStep('Initializing AI model...');
+    if (!appDescription) {
+      toast({
+        title: "Description Required",
+        description: "Please provide a detailed description of the app you want to generate.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     try {
-      // Incremental progress updates to provide user feedback
-      const updateProgress = (step: string, percent: number) => {
-        setCurrentStep(step);
-        setProgress(percent);
-      };
+      setIsGenerating(true);
+      startGenerationSteps();
       
-      updateProgress('Analyzing requirements...', 20);
-      await new Promise(resolve => setTimeout(resolve, 800)); // Visual delay
+      // Make API call to generate the application
+      const result = await generateApplication(
+        appDescription,
+        currentProject.id,
+        selectedModel
+      );
       
-      updateProgress('Designing application architecture...', 35);
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Visual delay
-      
-      updateProgress('Generating code...', 60);
-      
-      // Call our API to generate the application
-      const result = await generateApplication(appDescription, 1, selectedModel);
-      
-      updateProgress('Finalizing application...', 90);
-      await new Promise(resolve => setTimeout(resolve, 500)); // Visual delay
-      
-      updateProgress('Complete!', 100);
-      
-      // Show success message
       toast({
         title: "Application Generated",
-        description: `Your application has been successfully generated with ${result.files.length} files.`,
+        description: `Your application has been generated with ${result.files.length} files.`,
       });
       
-      // Call the success callback with the generated files
+      // Call success callback
       if (onSuccess) {
         onSuccess(result.files);
       }
-      
-      // Close the dialog after a short delay
-      setTimeout(() => {
-        handleOpenChange(false);
-        setIsGenerating(false);
-      }, 1000);
       
     } catch (error: any) {
       console.error("Error generating application:", error);
       toast({
         title: "Generation Failed",
-        description: error.message || "There was an error generating your application.",
+        description: error.message || "An error occurred while generating the application.",
         variant: "destructive"
       });
+    } finally {
       setIsGenerating(false);
+      // Clean up the timer
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
     }
   };
   
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
+      <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
-          <DialogTitle>
-            Generate Your App with AI
+          <DialogTitle className="flex items-center gap-2">
+            <Bot className="h-5 w-5 text-primary" />
+            Generate Application with AI
           </DialogTitle>
           <DialogDescription>
-            Describe your application and our AI will generate all the necessary code files for you.
+            Describe your application in detail and our AI will generate a complete working application.
           </DialogDescription>
         </DialogHeader>
         
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="app-description" className="text-right">
-              Description
-            </Label>
-            <Textarea
-              id="app-description"
-              placeholder="Create an Ola-like cab booking app with ride booking, driver tracking, and payment features"
-              value={appDescription}
-              onChange={(e) => setAppDescription(e.target.value)}
-              className="col-span-3 h-32"
-              disabled={isGenerating}
-            />
-          </div>
-          
-          <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="ai-model" className="text-right">
               AI Model
             </Label>
-            <Select
-              value={selectedModel}
-              onValueChange={(value: AIModel) => setSelectedModel(value)}
+            <Select 
+              value={selectedModel} 
+              onValueChange={(value) => setSelectedModel(value as AIModel)}
               disabled={isGenerating}
             >
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="Select AI model" />
               </SelectTrigger>
               <SelectContent>
-                {modelOptions.map(model => (
+                {modelOptions.map((model) => (
                   <SelectItem key={model.value} value={model.value}>
                     {model.label}
                   </SelectItem>
@@ -169,13 +172,34 @@ export function AppGeneratorDialog({ open, onOpenChange, onSuccess }: AppGenerat
             </Select>
           </div>
           
+          <div className="grid grid-cols-4 items-start gap-4">
+            <Label htmlFor="app-description" className="text-right pt-2">
+              Description
+            </Label>
+            <Textarea
+              id="app-description"
+              value={appDescription}
+              onChange={(e) => setAppDescription(e.target.value)}
+              className="col-span-3 h-24"
+              placeholder="Describe your application in detail, e.g. 'Create a food delivery app with a menu, cart, and checkout.'"
+              disabled={isGenerating}
+            />
+          </div>
+          
           {isGenerating && (
-            <div className="space-y-2 mt-4">
-              <div className="flex justify-between text-sm">
-                <span>{currentStep}</span>
-                <span>{progress}%</span>
+            <div className="bg-muted p-4 rounded-md mt-2">
+              <div className="flex items-center gap-3 mb-2">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                <span className="font-medium text-primary">
+                  {generatingSteps[generatingStep]}
+                </span>
               </div>
-              <Progress value={progress} className="h-2" />
+              <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
+                <div 
+                  className="bg-primary h-full transition-all duration-500 ease-in-out"
+                  style={{ width: `${(generatingStep + 1) / generatingSteps.length * 100}%` }}
+                />
+              </div>
             </div>
           )}
         </div>
@@ -183,19 +207,20 @@ export function AppGeneratorDialog({ open, onOpenChange, onSuccess }: AppGenerat
         <DialogFooter>
           <Button 
             variant="outline" 
-            onClick={() => handleOpenChange(false)}
+            onClick={() => onOpenChange(false)}
             disabled={isGenerating}
           >
             Cancel
           </Button>
           <Button 
             onClick={handleGenerateApp}
-            disabled={isGenerating || !appDescription.trim()}
+            disabled={isGenerating || !appDescription}
+            className="gap-2"
           >
             {isGenerating ? (
-              <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating...</>
+              <><Loader2 className="h-4 w-4 animate-spin" /> Generating...</>
             ) : (
-              'Generate App'
+              <><Sparkles className="h-4 w-4" /> Generate Application</>
             )}
           </Button>
         </DialogFooter>

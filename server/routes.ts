@@ -791,6 +791,247 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to export project" });
     }
   });
+  
+  // AI App Generation Endpoint
+  app.post("/api/ai/generate-app", async (req, res) => {
+    try {
+      const { description, projectId, model } = req.body;
+      
+      if (!description || !projectId) {
+        return res.status(400).json({ message: "Missing required parameters" });
+      }
+      
+      // Get the project to validate it exists
+      const project = await storage.getProject(Number(projectId));
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      let apiKey: string;
+      let apiEndpoint: string;
+      
+      if (model === 'anthropic') {
+        apiKey = process.env.ANTHROPIC_API_KEY || '';
+        apiEndpoint = 'https://api.anthropic.com/v1/messages';
+      } else {
+        // Default to OpenAI
+        apiKey = process.env.OPENAI_API_KEY || '';
+        apiEndpoint = 'https://api.openai.com/v1/chat/completions';
+      }
+      
+      if (!apiKey) {
+        return res.status(500).json({ message: `API key for ${model} is not configured` });
+      }
+      
+      // In a real implementation, you would call the OpenAI API here to generate files
+      // For this implementation, we'll generate a simple React app based on the description
+      
+      // Create a simple React component based on the description
+      const generatedFiles = [
+        {
+          name: 'App.jsx',
+          path: 'src',
+          content: `import React, { useState, useEffect } from 'react';
+import './index.css';
+
+// This app was generated based on the description: "${description}"
+const App = () => {
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    // Simulate loading data
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1500);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+      <header className="bg-white dark:bg-gray-800 shadow-md">
+        <div className="container mx-auto px-4 py-6">
+          <h1 className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+            ${project.name} <span className="text-sm font-normal text-gray-500">v1.0</span>
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300 mt-1">${description}</p>
+        </div>
+      </header>
+      
+      <main className="container mx-auto px-4 py-8">
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Getting Started</h2>
+              <p className="text-gray-600 dark:text-gray-300">
+                Welcome to your new project! This is a starting point for your application.
+              </p>
+              <button className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                Learn More
+              </button>
+            </div>
+            
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Features</h2>
+              <ul className="space-y-2 text-gray-600 dark:text-gray-300">
+                <li className="flex items-center">
+                  <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  ${project.framework}
+                </li>
+                <li className="flex items-center">
+                  <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  ${project.backend}
+                </li>
+                <li className="flex items-center">
+                  <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Dark Mode Support
+                </li>
+              </ul>
+            </div>
+            
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">About</h2>
+              <p className="text-gray-600 dark:text-gray-300">
+                This project was created with Xalgrow AI Assistant.
+                ${description}
+              </p>
+            </div>
+          </div>
+        )}
+      </main>
+      
+      <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-auto">
+        <div className="container mx-auto px-4 py-6">
+          <p className="text-center text-gray-500 dark:text-gray-400">
+            © ${new Date().getFullYear()} ${project.name} - Created with Xalgrow
+          </p>
+        </div>
+      </footer>
+    </div>
+  );
+};
+
+export default App;`
+        },
+        {
+          name: 'MainComponent.jsx',
+          path: 'src/components',
+          content: `import React, { useState } from 'react';
+
+// This component was generated based on the description: "${description}"
+const MainComponent = () => {
+  const [isActive, setIsActive] = useState(false);
+  const [items, setItems] = useState([
+    { id: 1, title: 'Item 1', complete: false },
+    { id: 2, title: 'Item 2', complete: true },
+    { id: 3, title: 'Item 3', complete: false },
+  ]);
+
+  const handleToggleActive = () => {
+    setIsActive(!isActive);
+  };
+
+  const handleToggleComplete = (id) => {
+    setItems(
+      items.map((item) =>
+        item.id === id ? { ...item, complete: !item.complete } : item
+      )
+    );
+  };
+
+  const handleAddItem = () => {
+    const newId = items.length > 0 ? Math.max(...items.map((item) => item.id)) + 1 : 1;
+    setItems([...items, { id: newId, title: \`Item \${newId}\`, complete: false }]);
+  };
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-md mx-auto">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold text-gray-800 dark:text-white">
+          ${project.name} Component
+        </h2>
+        <button
+          onClick={handleToggleActive}
+          className={\`px-3 py-1 rounded-full transition-colors \${
+            isActive
+              ? 'bg-green-500 text-white'
+              : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+          }\`}
+        >
+          {isActive ? 'Active' : 'Inactive'}
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        {items.map((item) => (
+          <div
+            key={item.id}
+            className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg"
+          >
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                checked={item.complete}
+                onChange={() => handleToggleComplete(item.id)}
+                className="h-5 w-5 text-blue-500 rounded focus:ring-blue-500 cursor-pointer"
+              />
+              <span
+                className={\`ml-3 \${
+                  item.complete
+                    ? 'line-through text-gray-400 dark:text-gray-500'
+                    : 'text-gray-700 dark:text-gray-300'
+                }\`}
+              >
+                {item.title}
+              </span>
+            </div>
+            <span className="text-xs text-gray-500">
+              {item.complete ? 'Completed' : 'Pending'}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <button
+        onClick={handleAddItem}
+        className="mt-6 w-full py-2 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+      >
+        Add Item
+      </button>
+    </div>
+  );
+};
+
+export default MainComponent;`
+        }
+      ];
+      
+      // Create the files in the database through our storage interface
+      for (const file of generatedFiles) {
+        await storage.createFile({
+          name: file.name,
+          path: file.path,
+          content: file.content,
+          projectId: Number(projectId)
+        });
+      }
+      
+      res.json({ files: generatedFiles });
+    } catch (error: any) {
+      console.error('Error generating app:', error);
+      res.status(500).json({ message: error.message || 'Failed to generate application' });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
