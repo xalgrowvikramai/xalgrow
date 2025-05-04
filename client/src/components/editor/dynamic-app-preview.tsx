@@ -167,18 +167,24 @@ const DynamicAppPreview: React.FC<DynamicAppPreviewProps> = ({ className = '' })
       // Clean up markdown code blocks if they exist
       let cleanContent = content;
       
+      // Log the start of the content for debugging
+      console.log("Content start:", content.substring(0, 30));
+      
       // First check if the content has markdown code blocks
       if (content.startsWith('```')) {
+        console.log("Content has code block markers");
+        
         // Extract content between code block markers
-        const codeBlockRegex = /```(?:jsx|js|tsx|ts|html|css)?\n([\s\S]*?)```/;
+        const codeBlockRegex = /```(?:jsx|js|tsx|ts|html|css)?\n([\s\S]*?)```$/;
         const match = content.match(codeBlockRegex);
         
         if (match && match[1]) {
           cleanContent = match[1];
-          console.log("Cleaned content from code blocks");
+          console.log("Successfully cleaned content from code blocks");
         } else {
           // If no match, try removing just the markers
-          cleanContent = content.replace(/^```(?:jsx|js|tsx|ts|html|css)?\n|```$/g, '');
+          cleanContent = content.replace(/^```(?:jsx|js|tsx|ts|html|css)?\n/, '').replace(/```$/, '');
+          console.log("Cleaned content using regex replacement");
         }
       }
       

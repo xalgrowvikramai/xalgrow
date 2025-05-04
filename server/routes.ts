@@ -797,14 +797,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Check if content has markdown code blocks
     if (content.startsWith('```')) {
       // Extract content between code block markers
-      const codeBlockRegex = /```(?:jsx|js|tsx|ts|html|css)?\n([\s\S]*?)```/;
+      const codeBlockRegex = /```(?:jsx|js|tsx|ts|html|css)?\n([\s\S]*?)```$/;
       const match = content.match(codeBlockRegex);
       
       if (match && match[1]) {
+        console.log("Successfully cleaned markdown code block");
         return match[1];
       } else {
         // If no match, try removing just the markers
-        return content.replace(/^```(?:jsx|js|tsx|ts|html|css)?\n|```$/g, '');
+        const cleaned = content.replace(/^```(?:jsx|js|tsx|ts|html|css)?\n/, '').replace(/```$/, '');
+        console.log("Cleaned content using regex replacement");
+        return cleaned;
       }
     }
     return content;
