@@ -10,7 +10,7 @@ import { ProjectSettings } from '@/components/project/project-settings';
 import { CodeEditor } from '@/components/ui/code-editor';
 import { PreviewPanel } from '@/components/editor/preview-panel';
 import { StandalonePreview } from '@/components/editor/standalone-preview';
-import { InteractiveAppPreview } from '@/components/editor/interactive-app-preview';
+import { FacebookAppPreview } from '@/components/editor/facebook-app-preview';
 import { ChatInterface } from '@/components/ai/chat-interface';
 import { DeploymentOptions } from '@/components/deployment/deployment-options';
 import { Button } from '@/components/ui/button';
@@ -289,7 +289,7 @@ const Editor: React.FC = () => {
                   </div>
                 </div>
                 <div className="p-2 overflow-auto h-full">
-                  <InteractiveAppPreview />
+                  <FacebookAppPreview />
                 </div>
               </div>
             </div>
