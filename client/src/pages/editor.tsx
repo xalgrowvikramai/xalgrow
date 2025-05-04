@@ -60,16 +60,29 @@ const Editor: React.FC = () => {
     if (match && params.id) {
       const projectId = parseInt(params.id);
       
-      // Fetch project details
-      fetchProject(projectId).then(() => {
-        // Fetch project files
-        fetchProjectFiles(projectId);
-      }).catch(error => {
-        console.error('Failed to load project:', error);
-        setLocation('/dashboard');
-      });
+      // Only fetch if not already loaded or if it's a different project
+      if (!currentProject || currentProject.id !== projectId) {
+        console.log('Fetching project data for ID:', projectId);
+        
+        // Fetch project details
+        fetchProject(projectId).then(() => {
+          // Fetch project files only after project is fetched
+          fetchProjectFiles(projectId);
+        }).catch(error => {
+          console.error('Failed to load project:', error);
+          setLocation('/dashboard');
+        });
+      } else {
+        console.log('Project already loaded:', projectId);
+        
+        // If project is loaded but files aren't, fetch files
+        if (projectFiles.length === 0) {
+          console.log('Fetching files for already loaded project');
+          fetchProjectFiles(projectId);
+        }
+      }
     }
-  }, [match, params, fetchProject, fetchProjectFiles, setLocation]);
+  }, [match, params, currentProject, projectFiles.length, fetchProject, fetchProjectFiles, setLocation]);
 
   // Save file content when changed
   const handleSaveFile = async () => {
