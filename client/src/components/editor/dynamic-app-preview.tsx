@@ -150,12 +150,30 @@ const DynamicAppPreview: React.FC<DynamicAppPreviewProps> = ({ className = '' })
   // Helper function to convert React component content to regular HTML
   const transformAppContentToHTML = (content: string): string => {
     try {
+      // Clean up markdown code blocks if they exist
+      let cleanContent = content;
+      if (content.startsWith('```jsx') || content.startsWith('```js')) {
+        cleanContent = content.replace(/^```(jsx|js|tsx|ts)\n|```$/g, '');
+      }
+      
       // Extract JSX from content - anything between return ( and );
       const returnRegex = /return\s*\(\s*([\s\S]*?)\s*\)\s*;/;
-      const match = content.match(returnRegex);
+      const match = cleanContent.match(returnRegex);
       
       if (!match || !match[1]) {
-        return '<p>No renderable content found</p>';
+        // If no return statement found, try to display the content as is
+        const simpleContent = cleanContent
+          .replace(/import[\s\S]*?from\s+['"].*?['"]\s*;/g, '') // Remove imports
+          .replace(/export\s+default\s+\w+\s*;?/g, '') // Remove exports
+          .replace(/const\s+\w+\s*=\s*\(\s*\)\s*=>\s*{/g, '') // Remove function declarations
+          .replace(/};?\s*$/g, ''); // Remove closing braces
+        
+        return `<div class="p-4 bg-white dark:bg-gray-800 rounded-lg">
+          <h3 class="text-lg font-medium mb-3">File Content Preview</h3>
+          <pre class="bg-gray-100 dark:bg-gray-900 p-3 rounded overflow-auto text-sm">${
+            simpleContent.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          }</pre>
+        </div>`;
       }
       
       let jsx = match[1];
@@ -167,18 +185,43 @@ const DynamicAppPreview: React.FC<DynamicAppPreviewProps> = ({ className = '' })
       // Handle JSX self-closing tags
       jsx = jsx.replace(/\/>/g, '></div>');
       
-      // Replace {} expressions with placeholders
-      jsx = jsx.replace(/\{([^}]+)\}/g, '...');
+      // Replace dynamic content with placeholders
+      jsx = jsx.replace(/\{isLoading.*?\}/g, '');
+      jsx = jsx.replace(/\{items\.map\(.*?\}\)}/g, '<div class="sample-item">Sample Item</div>');
+      jsx = jsx.replace(/\{.*?\.map\(.*?\}\)}/g, '<div class="sample-item">Sample Item</div>');
+      
+      // More specific placeholders for common patterns
+      jsx = jsx.replace(/\{currentProject\.name\}/g, 'Project Name');
+      jsx = jsx.replace(/\{description\}/g, 'Description');
+      jsx = jsx.replace(/\{project\.name\}/g, 'Project Name');
+      jsx = jsx.replace(/\{project\.description\}/g, 'Project Description');
+      
+      // Replace remaining {} expressions with placeholders
+      jsx = jsx.replace(/\{([^}]+)\}/g, '');
       
       // Remove React-specific props
       jsx = jsx.replace(/onClick={[^}]+}/g, '');
       jsx = jsx.replace(/onChange={[^}]+}/g, '');
       jsx = jsx.replace(/onSubmit={[^}]+}/g, '');
+      jsx = jsx.replace(/key={[^}]+}/g, '');
       
-      return jsx;
+      // Convert JSX comments
+      jsx = jsx.replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
+      
+      // Remove other React/JSX specific syntax
+      jsx = jsx.replace(/<>/g, '<div class="fragment">');
+      jsx = jsx.replace(/<\/>/g, '</div>');
+      
+      // Clean up any double quotes or single quotes
+      jsx = jsx.replace(/(\w+)=["']([^"']+)["']/g, '$1="$2"');
+      
+      return `<div class="p-4 bg-white dark:bg-gray-800 rounded-lg">${jsx}</div>`;
     } catch (err) {
       console.error('Error transforming JSX to HTML:', err);
-      return '<p>Error parsing component content</p>';
+      return `<div class="p-4 bg-gray-100 dark:bg-gray-900 rounded-lg">
+        <h3 class="text-lg font-medium text-red-600 dark:text-red-400 mb-2">Error parsing component</h3>
+        <p>The component could not be rendered. Please check the code editor to view the raw content.</p>
+      </div>`;
     }
   };
   

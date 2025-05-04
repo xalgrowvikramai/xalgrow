@@ -807,6 +807,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Project not found" });
       }
       
+      console.log(`Generating app for project ${projectId} with description: ${description}`);
+      
       let apiKey: string;
       let apiEndpoint: string;
       
@@ -1018,10 +1020,13 @@ export default MainComponent;`
       
       // Create the files in the database through our storage interface
       for (const file of generatedFiles) {
+        console.log(`Created file: ${file.path}/${file.name}`);
+        
+        // Create the file without markdown code blocks in the content
         await storage.createFile({
           name: file.name,
           path: file.path,
-          content: file.content,
+          content: file.content, // Store raw content without code block markers
           projectId: Number(projectId)
         });
       }
