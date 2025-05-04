@@ -91,37 +91,29 @@ const DynamicAppPreview: React.FC<DynamicAppPreviewProps> = ({ className = '' })
         return renderFallbackPreview();
       }
       
-      // Inject any CSS into the document
-      if (cssFiles.length > 0) {
-        cssFiles.forEach(cssFile => {
-          try {
-            // Create style element for each CSS file
-            const styleElement = document.createElement('style');
-            styleElement.textContent = cssFile.content;
-            styleElement.id = `dynamic-style-${cssFile.id}`;
-            
-            // Remove any existing style with the same ID
-            const existingStyle = document.getElementById(`dynamic-style-${cssFile.id}`);
-            if (existingStyle) {
-              existingStyle.remove();
-            }
-            
-            // Add to document head
-            document.head.appendChild(styleElement);
-          } catch (err) {
-            console.error('Error injecting CSS:', err);
-          }
-        });
-      }
+      // Process any cleanup needed on the app file content
+      let processedAppContent = appFile.content;
       
-      // Log the app file content for debugging
-      console.log('App file content:', appFile.content.substring(0, 100) + '...');
-      
-      // Add a button to clean markdown code blocks if needed
-      if (appFile.content.startsWith('```')) {
+      // Clean up markdown code blocks if necessary
+      if (processedAppContent.startsWith('```')) {
         console.log('App file has markdown code blocks that need cleaning');
         
-        // Automatically clean the file through the API
+        // Extract content between code block markers
+        const codeBlockRegex = /```(?:jsx|js|tsx|ts|html|css)?\n([\s\S]*?)```$/;
+        const match = processedAppContent.match(codeBlockRegex);
+        
+        if (match && match[1]) {
+          console.log('Successfully cleaned markdown code blocks locally');
+          processedAppContent = match[1];
+        } else {
+          // If no match, try removing just the markers
+          processedAppContent = processedAppContent
+            .replace(/^```(?:jsx|js|tsx|ts|html|css)?\n/, '')
+            .replace(/```$/, '');
+          console.log('Cleaned using simple regex replacement');
+        }
+        
+        // Also trigger server cleanup for future renders
         fetch(`/api/projects/${currentProject?.id}/clean-files`, {
           method: 'POST',
           headers: {
@@ -130,38 +122,96 @@ const DynamicAppPreview: React.FC<DynamicAppPreviewProps> = ({ className = '' })
         })
         .then(res => res.json())
         .then(data => {
-          console.log('Files cleaned:', data);
-          // We don't need to reload since the context should update on its own
+          console.log('Files cleaned via API:', data);
         })
-        .catch(err => console.error('Error cleaning files:', err));
+        .catch(err => console.error('Error cleaning files via API:', err));
       }
       
-      // Create a basic wrapper component that displays the file list and code structure
+      // Get all component files to include in the sandbox
+      const componentFiles = jsxFiles.filter(file => file.id !== appFile.id);
+      
+      // Get all CSS content
+      const cssContent = cssFiles.map(file => file.content).join('\n');
+      
+      // Create a sandbox iframe to run the React code
+      const iframeSrcDoc = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>App Preview</title>
+            <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+            <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+            <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+            <style>
+              body {
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+                margin: 0;
+                padding: 0;
+              }
+              
+              /* Include all project CSS */
+              ${cssContent}
+            </style>
+          </head>
+          <body>
+            <div id="root"></div>
+            
+            <script type="text/babel">
+              // Component imports would normally go here
+              
+              // Include any supporting component files
+              ${componentFiles.map(file => `
+                // ${file.path}/${file.name}
+                ${file.content.startsWith('```') 
+                  ? file.content.replace(/^```(?:jsx|js|tsx|ts|html|css)?\n/, '').replace(/```$/, '')
+                  : file.content}
+              `).join('\n\n')}
+              
+              // Main App component
+              ${processedAppContent}
+              
+              // Render the app
+              try {
+                const rootElement = document.getElementById('root');
+                const root = ReactDOM.createRoot(rootElement);
+                root.render(React.createElement(App));
+                console.log('Successfully rendered the app!');
+              } catch (err) {
+                console.error('Error rendering React app:', err);
+                document.getElementById('root').innerHTML = 
+                  '<div style="color: red; padding: 20px; border: 1px solid red;">' +
+                  '<h3>Error Rendering App</h3>' +
+                  '<p>' + err.message + '</p>' +
+                  '</div>';
+              }
+            </script>
+          </body>
+        </html>
+      `;
+      
+      // Return the component with the sandbox iframe
       return (
-        <div className="p-4">
+        <div className="p-4 h-full flex flex-col">
           <h2 className="text-xl font-bold mb-4">Generated App Preview</h2>
           
-          <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg mb-4 bg-white dark:bg-gray-800">
-            <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2 mb-4">
-              <h3 className="font-medium text-gray-800 dark:text-gray-200">App Content:</h3>
-              <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-                {appFile.path}/{appFile.name}
-              </span>
-            </div>
-            
-            <div className="prose dark:prose-invert max-w-none">
-              {/* Simplified preview of the generated app content */}
-              <div dangerouslySetInnerHTML={{ __html: transformAppContentToHTML(appFile.content) }} />
-            </div>
+          <div className="flex-1 border border-gray-200 dark:border-gray-700 rounded-lg mb-4 overflow-hidden">
+            <iframe
+              title="App Preview"
+              sandbox="allow-scripts"
+              className="w-full h-full border-0 bg-white dark:bg-gray-50"
+              srcDoc={iframeSrcDoc}
+            />
           </div>
           
           <div className="mt-4">
             <h3 className="text-lg font-medium mb-2">Project Structure:</h3>
-            <div className="space-y-1">
+            <div className="space-y-1 max-h-60 overflow-y-auto">
               {projectFiles.map((file, index) => (
                 <div key={index} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-md font-mono text-sm flex justify-between">
-                  <span>{file.path}/{file.name}</span>
-                  <span className="text-xs text-gray-500">{file.content.length} bytes</span>
+                  <span className="truncate">{file.path}/{file.name}</span>
+                  <span className="text-xs text-gray-500 ml-2 whitespace-nowrap">{file.content.length} bytes</span>
                 </div>
               ))}
             </div>
@@ -175,6 +225,9 @@ const DynamicAppPreview: React.FC<DynamicAppPreviewProps> = ({ className = '' })
         <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-md border border-red-200 dark:border-red-700">
           <h3 className="text-lg font-semibold text-red-800 dark:text-red-500 mb-2">Rendering Error</h3>
           <p className="text-red-700 dark:text-red-400">{err.message || 'An error occurred while rendering the preview'}</p>
+          <pre className="mt-2 p-2 bg-gray-100 dark:bg-gray-900 text-xs overflow-auto rounded">
+            {err.stack || 'No stack trace available'}
+          </pre>
         </div>
       );
     }
