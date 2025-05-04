@@ -117,6 +117,25 @@ const DynamicAppPreview: React.FC<DynamicAppPreviewProps> = ({ className = '' })
       // Log the app file content for debugging
       console.log('App file content:', appFile.content.substring(0, 100) + '...');
       
+      // Add a button to clean markdown code blocks if needed
+      if (appFile.content.startsWith('```')) {
+        console.log('App file has markdown code blocks that need cleaning');
+        
+        // Automatically clean the file through the API
+        fetch(`/api/projects/${currentProject?.id}/clean-files`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+        .then(res => res.json())
+        .then(data => {
+          console.log('Files cleaned:', data);
+          // We don't need to reload since the context should update on its own
+        })
+        .catch(err => console.error('Error cleaning files:', err));
+      }
+      
       // Create a basic wrapper component that displays the file list and code structure
       return (
         <div className="p-4">

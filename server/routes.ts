@@ -367,6 +367,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Clean markdown code blocks from all files in a project
+  app.post("/api/projects/:projectId/clean-files", async (req, res) => {
+    try {
+      // For demo purposes, use userId 1 if not authenticated
+      const userId = req.session.userId || 1;
+      
+      const projectId = parseInt(req.params.projectId);
+      const project = await storage.getProject(projectId);
+      
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      // Get all files for the project
+      const files = await storage.getFilesByProjectId(projectId);
+      
+      let cleanedCount = 0;
+      
+      // Process each file to remove markdown code blocks
+      for (const file of files) {
+        if (file.content && file.content.startsWith('```')) {
+          console.log(`Cleaning file ${file.id}: ${file.path}/${file.name}`);
+          
+          const cleanedContent = cleanCodeContent(file.content);
+          
+          // Update the file with cleaned content
+          await storage.updateFile(file.id, {
+            content: cleanedContent
+          });
+          
+          cleanedCount++;
+        }
+      }
+      
+      res.json({ 
+        message: `Successfully cleaned ${cleanedCount} files from markdown code blocks`,
+        cleanedCount,
+        totalFiles: files.length
+      });
+    } catch (error: any) {
+      console.error('Error cleaning files:', error);
+      res.status(500).json({ message: error.message || 'Failed to clean files' });
+    }
+  });
+  
   app.post("/api/projects/:projectId/files", async (req, res) => {
     try {
       // For demo purposes, use userId 1 if not authenticated
@@ -794,22 +839,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Helper function to clean markdown code blocks from content
   const cleanCodeContent = (content: string): string => {
+    // Check if the content is a string and not empty
+    if (!content || typeof content !== 'string') {
+      return content || '';
+    }
+    
     // Check if content has markdown code blocks
     if (content.startsWith('```')) {
-      // Extract content between code block markers
-      const codeBlockRegex = /```(?:jsx|js|tsx|ts|html|css)?\n([\s\S]*?)```$/;
-      const match = content.match(codeBlockRegex);
+      console.log("Content starts with code block markers");
       
-      if (match && match[1]) {
-        console.log("Successfully cleaned markdown code block");
-        return match[1];
-      } else {
-        // If no match, try removing just the markers
-        const cleaned = content.replace(/^```(?:jsx|js|tsx|ts|html|css)?\n/, '').replace(/```$/, '');
-        console.log("Cleaned content using regex replacement");
+      // Try a more robust approach to remove code blocks
+      try {
+        // First, try to match the entire code block pattern
+        const codeBlockRegex = /^```(?:jsx|js|tsx|ts|html|css)?\n([\s\S]*?)```$/;
+        const match = content.match(codeBlockRegex);
+        
+        if (match && match[1]) {
+          console.log("Successfully extracted content from code block");
+          return match[1];
+        }
+        
+        // If that didn't work, try a simpler approach
+        // Remove the opening code block marker (```jsx\n, ```js\n, etc.)
+        let cleaned = content.replace(/^```(?:jsx|js|tsx|ts|html|css)?\n/, '');
+        // Remove the closing code block marker
+        cleaned = cleaned.replace(/```$/, '');
+        
+        console.log("Cleaned content using simple regex replacement");
         return cleaned;
+      } catch (err) {
+        console.error("Error cleaning code blocks:", err);
+        // If all else fails, return the original content
+        return content;
       }
     }
+    
     return content;
   };
 
