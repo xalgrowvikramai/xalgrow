@@ -152,8 +152,20 @@ const DynamicAppPreview: React.FC<DynamicAppPreviewProps> = ({ className = '' })
     try {
       // Clean up markdown code blocks if they exist
       let cleanContent = content;
-      if (content.startsWith('```jsx') || content.startsWith('```js')) {
-        cleanContent = content.replace(/^```(jsx|js|tsx|ts)\n|```$/g, '');
+      
+      // First check if the content has markdown code blocks
+      if (content.startsWith('```')) {
+        // Extract content between code block markers
+        const codeBlockRegex = /```(?:jsx|js|tsx|ts|html|css)?\n([\s\S]*?)```/;
+        const match = content.match(codeBlockRegex);
+        
+        if (match && match[1]) {
+          cleanContent = match[1];
+          console.log("Cleaned content from code blocks");
+        } else {
+          // If no match, try removing just the markers
+          cleanContent = content.replace(/^```(?:jsx|js|tsx|ts|html|css)?\n|```$/g, '');
+        }
       }
       
       // Extract JSX from content - anything between return ( and );
