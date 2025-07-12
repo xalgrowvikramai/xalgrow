@@ -1,16 +1,22 @@
-import { 
-  users, 
-  projects, 
-  files, 
-  templates, 
-  type User, 
-  type InsertUser, 
-  type Project, 
-  type InsertProject, 
-  type File, 
-  type InsertFile, 
-  type Template, 
-  type InsertTemplate 
+import {
+  users,
+  projects,
+  files,
+  templates,
+  posts,
+  connections,
+  type User,
+  type InsertUser,
+  type Project,
+  type InsertProject,
+  type File,
+  type InsertFile,
+  type Template,
+  type InsertTemplate,
+  type Post,
+  type InsertPost,
+  type Connection,
+  type InsertConnection
 } from "@shared/schema";
 
 export interface IStorage {
@@ -34,6 +40,19 @@ export interface IStorage {
   createFile(file: InsertFile): Promise<File>;
   updateFile(id: number, fileData: Partial<InsertFile>): Promise<File | undefined>;
   deleteFile(id: number): Promise<boolean>;
+
+  // Post operations
+  getPost(id: number): Promise<Post | undefined>;
+  getPostsByUserId(userId: number): Promise<Post[]>;
+  createPost(post: InsertPost): Promise<Post>;
+  updatePost(id: number, postData: Partial<InsertPost>): Promise<Post | undefined>;
+  deletePost(id: number): Promise<boolean>;
+
+  // Connection operations
+  getConnection(id: number): Promise<Connection | undefined>;
+  getConnectionsByUserId(userId: number): Promise<Connection[]>;
+  createConnection(connection: InsertConnection): Promise<Connection>;
+  deleteConnection(id: number): Promise<boolean>;
   
   // Template operations
   getTemplate(id: number): Promise<Template | undefined>;
@@ -47,22 +66,30 @@ export class MemStorage implements IStorage {
   private projects: Map<number, Project>;
   private files: Map<number, File>;
   private templates: Map<number, Template>;
+  private posts: Map<number, Post>;
+  private connections: Map<number, Connection>;
   
   private userId: number;
   private projectId: number;
   private fileId: number;
   private templateId: number;
+  private postId: number;
+  private connectionId: number;
 
   constructor() {
     this.users = new Map();
     this.projects = new Map();
     this.files = new Map();
     this.templates = new Map();
+    this.posts = new Map();
+    this.connections = new Map();
     
     this.userId = 1;
     this.projectId = 1;
     this.fileId = 1;
     this.templateId = 1;
+    this.postId = 1;
+    this.connectionId = 1;
     
     // Initialize with sample templates
     this.initializeTemplates();
@@ -256,6 +283,60 @@ export class MemStorage implements IStorage {
     
     this.templates.set(id, template);
     return template;
+  }
+
+  // Post operations
+  async getPost(id: number): Promise<Post | undefined> {
+    return this.posts.get(id);
+  }
+
+  async getPostsByUserId(userId: number): Promise<Post[]> {
+    return Array.from(this.posts.values()).filter(p => p.userId === userId);
+  }
+
+  async createPost(insertPost: InsertPost): Promise<Post> {
+    const id = this.postId++;
+    const now = new Date();
+    const post: Post = { ...insertPost, id, createdAt: now, updatedAt: now };
+    this.posts.set(id, post);
+    return post;
+  }
+
+  async updatePost(id: number, postData: Partial<InsertPost>): Promise<Post | undefined> {
+    const post = this.posts.get(id);
+    if (!post) return undefined;
+
+    const now = new Date();
+    const updatedPost: Post = { ...post, ...postData, updatedAt: now };
+    this.posts.set(id, updatedPost);
+    return updatedPost;
+  }
+
+  async deletePost(id: number): Promise<boolean> {
+    return this.posts.delete(id);
+  }
+
+  // Connection operations
+  async getConnection(id: number): Promise<Connection | undefined> {
+    return this.connections.get(id);
+  }
+
+  async getConnectionsByUserId(userId: number): Promise<Connection[]> {
+    return Array.from(this.connections.values()).filter(
+      c => c.userId === userId
+    );
+  }
+
+  async createConnection(insertConn: InsertConnection): Promise<Connection> {
+    const id = this.connectionId++;
+    const now = new Date();
+    const connection: Connection = { ...insertConn, id, createdAt: now };
+    this.connections.set(id, connection);
+    return connection;
+  }
+
+  async deleteConnection(id: number): Promise<boolean> {
+    return this.connections.delete(id);
   }
 }
 

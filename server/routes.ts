@@ -766,6 +766,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to get template" });
     }
   });
+
+  // Post APIs
+  app.get("/api/posts", async (req, res) => {
+    const userId = req.session.userId || 1;
+    const posts = await storage.getPostsByUserId(userId);
+    res.status(200).json(posts);
+  });
+
+  app.get("/api/users/:userId/posts", async (req, res) => {
+    const userId = parseInt(req.params.userId);
+    const posts = await storage.getPostsByUserId(userId);
+    res.status(200).json(posts);
+  });
+
+  app.post("/api/posts", async (req, res) => {
+    const userId = req.session.userId || 1;
+    const { content } = req.body;
+    if (!content) {
+      return res.status(400).json({ message: "Content is required" });
+    }
+    const post = await storage.createPost({ userId, content });
+    res.status(201).json(post);
+  });
+
+  app.put("/api/posts/:id", async (req, res) => {
+    const postId = parseInt(req.params.id);
+    const post = await storage.getPost(postId);
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+    const updated = await storage.updatePost(postId, { content: req.body.content });
+    res.status(200).json(updated);
+  });
+
+  app.delete("/api/posts/:id", async (req, res) => {
+    const postId = parseInt(req.params.id);
+    const ok = await storage.deletePost(postId);
+    if (!ok) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+    res.status(200).json({ message: "Post deleted" });
+  });
+
+  // Connection APIs
+  app.get("/api/connections", async (req, res) => {
+    const userId = req.session.userId || 1;
+    const conns = await storage.getConnectionsByUserId(userId);
+    res.status(200).json(conns);
+  });
+
+  app.post("/api/connections", async (req, res) => {
+    const userId = req.session.userId || 1;
+    const { connectedUserId } = req.body;
+    if (!connectedUserId) {
+      return res.status(400).json({ message: "connectedUserId is required" });
+    }
+    const conn = await storage.createConnection({ userId, connectedUserId });
+    res.status(201).json(conn);
+  });
+
+  app.delete("/api/connections/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    const ok = await storage.deleteConnection(id);
+    if (!ok) {
+      return res.status(404).json({ message: "Connection not found" });
+    }
+    res.status(200).json({ message: "Connection deleted" });
+  });
   
   // Project Export API
   app.get("/api/projects/:id/export", async (req, res) => {
