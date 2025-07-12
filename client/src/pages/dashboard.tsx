@@ -63,19 +63,27 @@ const Dashboard: React.FC = () => {
           <h1 className="text-3xl font-bold">{t('dashboard.myProjects')}</h1>
           
           <div className="space-x-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setShowGenerateAppDialog(true)}
               className="flex items-center"
             >
               <Sparkles className="mr-2 h-4 w-4" /> {t('dashboard.generateApp')}
             </Button>
-            
-            <Button 
+
+            <Button
               onClick={() => setShowNewProjectDialog(true)}
               className="flex items-center"
             >
               <Plus className="mr-2 h-4 w-4" /> {t('dashboard.newProject')}
+            </Button>
+
+            {/* Temporary demo button */}
+            <Button
+              variant="secondary"
+              onClick={() => alert('Hello from Xalgrow!')}
+            >
+              Say Hello
             </Button>
           </div>
         </div>
