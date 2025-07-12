@@ -569,6 +569,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to generate code" });
     }
   });
+
+  // API for analyzing code and providing improvement suggestions
+  app.post("/api/ai/analyze", async (req, res) => {
+    try {
+      const { code, model = "openai" } = req.body;
+
+      if (!code) {
+        return res.status(400).json({ message: "Code is required" });
+      }
+
+      let analysis;
+
+      if (model === "openai") {
+        // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        const response = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: "You are a senior developer. Provide suggestions to improve the following code."
+            },
+            {
+              role: "user",
+              content: code
+            }
+          ]
+        });
+
+        analysis = response.choices[0].message.content;
+      } else if (model === "anthropic") {
+        // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025. Do not change this unless explicitly requested by the user.
+        const response = await anthropic.messages.create({
+          model: "claude-3-7-sonnet-20250219",
+          max_tokens: 4000,
+          system: "You are a senior developer. Provide suggestions to improve the following code.",
+          messages: [
+            {
+              role: "user",
+              content: code
+            }
+          ]
+        });
+
+        if (response.content && response.content.length > 0) {
+          const content = response.content;
+          // @ts-ignore - Ignoring type check for Anthropic API response
+          analysis = content[0].text || JSON.stringify(content);
+        } else {
+          analysis = "No content returned from AI";
+        }
+      } else {
+        return res.status(400).json({ message: "Invalid model specified" });
+      }
+
+      res.status(200).json({ analysis });
+    } catch (error) {
+      console.error("AI code analysis error:", error);
+      res.status(500).json({ message: "Failed to analyze code" });
+    }
+  });
   
   // API for generating complete applications based on a description
   app.post("/api/ai/generate-app", async (req, res) => {

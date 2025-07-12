@@ -12,15 +12,16 @@ interface ChatInterfaceProps {
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = '' }) => {
   const { t } = useI18n();
-  const { 
-    chatMessages, 
-    sendChatMessage, 
-    userPrompt, 
-    setUserPrompt, 
-    selectedModel, 
+  const {
+    chatMessages,
+    sendChatMessage,
+    userPrompt,
+    setUserPrompt,
+    selectedModel,
     setSelectedModel,
     isGenerating,
-    insertGeneratedCode
+    insertGeneratedCode,
+    analyzeActiveFile
   } = useEditor();
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -129,16 +130,24 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = '' }) => {
             <SelectTrigger className="text-xs bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md p-1 h-8 w-28">
               <SelectValue placeholder="Select model" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="openai">GPT-4</SelectItem>
-              <SelectItem value="anthropic">Claude</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button 
-            variant="ghost" 
-            size="icon"
-            className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-          >
+          <SelectContent>
+            <SelectItem value="openai">GPT-4</SelectItem>
+            <SelectItem value="anthropic">Claude</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={analyzeActiveFile}
+          className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+        >
+          <i className="ri-file-search-line"></i>
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+        >
             <i className="ri-settings-line"></i>
           </Button>
         </div>

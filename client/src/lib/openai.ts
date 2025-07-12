@@ -5,6 +5,10 @@ interface CodeGenerationResponse {
   code: string;
 }
 
+interface CodeAnalysisResponse {
+  analysis: string;
+}
+
 /**
  * Generates code using OpenAI's API
  * @param prompt The prompt to send to the API
@@ -32,17 +36,13 @@ export async function generateCodeWithOpenAI(prompt: string): Promise<string> {
  */
 export async function analyzeCodeWithOpenAI(code: string): Promise<string> {
   try {
-    const prompt = `Analyze the following code and provide insights on improvements:
-    
-    ${code}`;
-    
-    const response = await apiRequest('POST', '/api/ai/generate', {
-      prompt,
+    const response = await apiRequest('POST', '/api/ai/analyze', {
+      code,
       model: 'openai'
     });
-    
-    const data: CodeGenerationResponse = await response.json();
-    return data.code;
+
+    const data: CodeAnalysisResponse = await response.json();
+    return data.analysis;
   } catch (error) {
     console.error("OpenAI code analysis error:", error);
     throw new Error(`Failed to analyze code with OpenAI: ${error}`);
