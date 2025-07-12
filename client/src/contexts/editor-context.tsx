@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { generateCodeWithOpenAI } from '@/lib/openai';
-import { generateCodeWithAnthropic } from '@/lib/anthropic';
+import { generateCodeWithOpenAI, analyzeCodeWithOpenAI } from '@/lib/openai';
+import { generateCodeWithAnthropic, analyzeCodeWithAnthropic } from '@/lib/anthropic';
 import { ProjectFile } from '@/types';
 import { AIModel, ChatMessage, PreviewDevice } from '@/types';
 
@@ -20,6 +20,7 @@ interface EditorContextType {
   setUserPrompt: (prompt: string) => void;
   sendChatMessage: (message: string) => Promise<void>;
   insertGeneratedCode: (code: string) => void;
+  analyzeActiveFile: () => Promise<void>;
 }
 
 const EditorContext = createContext<EditorContextType>({
@@ -37,6 +38,7 @@ const EditorContext = createContext<EditorContextType>({
   setUserPrompt: () => {},
   sendChatMessage: async () => {},
   insertGeneratedCode: () => {},
+  analyzeActiveFile: async () => {},
 });
 
 export const useEditor = () => useContext(EditorContext);
@@ -134,6 +136,50 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
+  const analyzeActiveFile = async (): Promise<void> => {
+    if (!activeFile) {
+      toast({
+        title: "Cannot analyze code",
+        description: "No file is currently active in the editor",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsGenerating(true);
+
+      const analysis = selectedModel === 'openai'
+        ? await analyzeCodeWithOpenAI(activeFileContent)
+        : await analyzeCodeWithAnthropic(activeFileContent);
+
+      const userMessage: ChatMessage = {
+        id: Date.now().toString(),
+        role: 'user',
+        content: `Analyze file ${activeFile.name}`,
+        timestamp: new Date()
+      };
+
+      const aiMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: analysis,
+        timestamp: new Date()
+      };
+
+      setChatMessages(prev => [...prev, userMessage, aiMessage]);
+    } catch (err: any) {
+      const errorMsg = err.message || 'Failed to analyze code';
+      toast({
+        title: "Code analysis failed",
+        description: errorMsg,
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const value = {
     activeFile,
     activeFileContent,
@@ -149,6 +195,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setUserPrompt,
     sendChatMessage,
     insertGeneratedCode,
+    analyzeActiveFile,
   };
 
   return <EditorContext.Provider value={value}>{children}</EditorContext.Provider>;
