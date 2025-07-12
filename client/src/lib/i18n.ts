@@ -21,7 +21,7 @@ const translations: Translations = {
     settings: 'Settings',
     signOut: 'Sign Out',
     // Welcome Banner
-    welcomeTitle: 'Welcome to Xalgrow!',
+    welcomeTitle: 'OneBay',
     welcomeDescription: 'The AI-powered coding assistant that helps you build full-stack applications with ease. Generate, edit, and preview your code in real-time.',
     newProject: 'New Project',
     tutorials: 'Tutorials',
@@ -89,7 +89,7 @@ const translations: Translations = {
     settings: 'सेटिंग्स',
     signOut: 'साइन आउट',
     // Welcome Banner
-    welcomeTitle: 'Xalgrow में आपका स्वागत है!',
+    welcomeTitle: 'OneBay',
     welcomeDescription: 'AI-संचालित कोडिंग सहायक जो आपको फुल-स्टैक एप्लिकेशन बनाने में मदद करता है। रियल-टाइम में अपना कोड जनरेट करें, संपादित करें और प्रीव्यू करें।',
     newProject: 'नया प्रोजेक्ट',
     tutorials: 'ट्यूटोरियल',
